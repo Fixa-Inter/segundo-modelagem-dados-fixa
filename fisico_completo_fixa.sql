@@ -1,10 +1,12 @@
 -- ===================================================
--- SCRIPT FIXA
+-- SCRIPT FÍSICO - FIXA
 -- ===================================================
+
 
 -- ===================================================
 -- DROPS
 -- ===================================================
+
 DROP TABLE IF EXISTS turno_usuario CASCADE;
 DROP TABLE IF EXISTS turno CASCADE;
 DROP TABLE IF EXISTS foto CASCADE;
@@ -31,9 +33,15 @@ DROP TABLE IF EXISTS instituicao CASCADE;
 DROP TABLE IF EXISTS super_admin CASCADE;
 DROP TABLE IF EXISTS observacao_conclusao CASCADE;
 
+
 -- ===================================================
 -- TABELAS BASE (ADMIN / INSTITUIÇÃO)
 -- ===================================================
+
+-- TABELA: super_admin
+-- Descrição: Armazena os administradores globais da plataforma.
+-- Dependências: -
+
 CREATE TABLE super_admin(
     id         SERIAL PRIMARY KEY,
     nome       VARCHAR(100) NOT NULL,
@@ -42,15 +50,25 @@ CREATE TABLE super_admin(
     esta_ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+
+-- TABELA: instituicao
+-- Descrição: Armazena as instituições cadastradas na plataforma.
+-- Dependências: -
+
 CREATE TABLE instituicao(
-    id               SERIAL PRIMARY KEY,
-    nome             VARCHAR(100) NOT NULL,
-    cnpj             VARCHAR(20) NOT NULL UNIQUE,
-    tipo_instituicao INTEGER NOT NULL,
-    dominio_email    VARCHAR(100) NOT NULL UNIQUE,
-    data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
-    esta_ativo       BOOLEAN NOT NULL DEFAULT TRUE
+    id                SERIAL PRIMARY KEY,
+    nome              VARCHAR(100) NOT NULL,
+    cnpj              VARCHAR(20) NOT NULL UNIQUE,
+    tipo_instituicao  INTEGER NOT NULL,
+    dominio_email     VARCHAR(100) NOT NULL UNIQUE,
+    data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
+    esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+
+-- TABELA: endereco
+-- Descrição: Armazena os endereços/franquias das instituições.
+-- Dependências: instituicao
 
 CREATE TABLE endereco(
     id             SERIAL PRIMARY KEY,
@@ -67,9 +85,15 @@ CREATE TABLE endereco(
     esta_ativo     BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+
 -- ===================================================
 -- FLUXO PLANO / PAGAMENTO
 -- ===================================================
+
+-- TABELA: plano
+-- Descrição: Define os planos disponíveis para contratação.
+-- Dependências: -
+
 CREATE TABLE plano(
     id            SERIAL PRIMARY KEY,
     nome          VARCHAR(100) NOT NULL,
@@ -79,6 +103,11 @@ CREATE TABLE plano(
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+
+-- TABELA: contrato
+-- Descrição: Registra os contratos vinculados às instituições.
+-- Dependências: plano, endereco
 
 CREATE TABLE contrato(
     id           SERIAL PRIMARY KEY,
@@ -90,6 +119,11 @@ CREATE TABLE contrato(
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
+-- TABELA: pagamento
+-- Descrição: Registra os pagamentos relacionados aos contratos.
+-- Dependências: contrato
+
 CREATE TABLE pagamento(
     id               SERIAL PRIMARY KEY,
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id),
@@ -100,9 +134,15 @@ CREATE TABLE pagamento(
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
 -- ===================================================
 -- USUÁRIOS / APTIDÃO
 -- ===================================================
+
+-- TABELA: usuario
+-- Descrição: Armazena os usuários e suas informações de acesso.
+-- Dependências: usuario (auto-relacionamento)
+
 CREATE TABLE usuario(
     id              SERIAL PRIMARY KEY,
     gerente_id      INTEGER REFERENCES usuario(id),
@@ -115,9 +155,14 @@ CREATE TABLE usuario(
     esta_ativo      BOOLEAN NOT NULL DEFAULT FALSE,
     primeiro_acesso BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT ck_usuario_nao_e_proprio_gerente 
+    CONSTRAINT ck_usuario_nao_e_proprio_gerente
         CHECK (gerente_id <> id)
 );
+
+
+-- TABELA: aptidao
+-- Descrição: Registra a aptidão dos técnicos para categorias de problemas.
+-- Dependências: usuario
 
 CREATE TABLE aptidao(
     id                 SERIAL PRIMARY KEY,
@@ -127,12 +172,19 @@ CREATE TABLE aptidao(
     data_criacao       TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo         BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT uk_usuario_categoria_aptidao UNIQUE (usuario_id, categoria_problema)
+    CONSTRAINT uk_usuario_categoria_aptidao
+        UNIQUE (usuario_id, categoria_problema)
 );
+
 
 -- ===================================================
 -- LOCAIS / EVENTOS
 -- ===================================================
+
+-- TABELA: local_endereco
+-- Descrição: Representa locais específicos dentro dos endereços.
+-- Dependências: endereco
+
 CREATE TABLE local_endereco(
     id                  SERIAL PRIMARY KEY,
     endereco_id         INTEGER NOT NULL REFERENCES endereco(id),
@@ -142,6 +194,11 @@ CREATE TABLE local_endereco(
     data_criacao        TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo          BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+
+-- TABELA: evento
+-- Descrição: Armazena eventos agendados em um endereço.
+-- Dependências: usuario, local_endereco
 
 CREATE TABLE evento(
     id                SERIAL PRIMARY KEY,
@@ -156,9 +213,15 @@ CREATE TABLE evento(
     data_criacao      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
 -- ===================================================
 -- EQUIPAMENTOS / PROBLEMAS / OCORRÊNCIAS
 -- ===================================================
+
+-- TABELA: categoria_equipamento
+-- Descrição: Armazena as categorias utilizadas para classificar equipamentos.
+-- Dependências: usuario
+
 CREATE TABLE categoria_equipamento(
     id           SERIAL PRIMARY KEY,
     usuario_id   INTEGER NOT NULL REFERENCES usuario(id),
@@ -168,6 +231,11 @@ CREATE TABLE categoria_equipamento(
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+
+-- TABELA: marca_equipamento
+-- Descrição: Armazena as marcas dos equipamentos.
+-- Dependências: -
+
 CREATE TABLE marca_equipamento(
     id           SERIAL PRIMARY KEY,
     nome         VARCHAR(100) NOT NULL,
@@ -175,6 +243,11 @@ CREATE TABLE marca_equipamento(
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+
+-- TABELA: modelo_equipamento
+-- Descrição: Armazena os modelos vinculados às suas marcas e categorias.
+-- Dependências: marca_equipamento, categoria_equipamento
 
 CREATE TABLE modelo_equipamento(
     id                       SERIAL PRIMARY KEY,
@@ -186,6 +259,11 @@ CREATE TABLE modelo_equipamento(
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+
+-- TABELA: equipamento
+-- Descrição: Armazena os equipamentos e suas localizações.
+-- Dependências: usuario, modelo_equipamento, local_endereco
+
 CREATE TABLE equipamento(
     id                    SERIAL PRIMARY KEY,
     usuario_id            INTEGER NOT NULL REFERENCES usuario(id),
@@ -195,6 +273,11 @@ CREATE TABLE equipamento(
     data_criacao          TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo            BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+
+-- TABELA: problema
+-- Descrição: Registra problemas identificados nas instituições.
+-- Dependências: usuario, categoria_equipamento, local_endereco
 
 CREATE TABLE problema(
     id                       SERIAL PRIMARY KEY,
@@ -207,6 +290,12 @@ CREATE TABLE problema(
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
     status                   INTEGER NOT NULL DEFAULT 0 -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
 );
+
+
+-- TABELA: ocorrencia
+-- Descrição: Registra ocorrências, ou seja, problemas não registrados, mas que já foram resolvidos
+--            por um técnico.
+-- Dependências: usuario, local_endereco, equipamento
 
 CREATE TABLE ocorrencia(
     id                   SERIAL PRIMARY KEY,
@@ -221,59 +310,91 @@ CREATE TABLE ocorrencia(
     data_criacao         TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo           BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT ck_prioridade_ocorrencia_0_a_2 
+    CONSTRAINT ck_prioridade_ocorrencia_0_a_2
         CHECK (prioridade >= 0 AND prioridade <= 2)
 );
+
 
 -- ===================================================
 -- ORDEM DE SERVIÇO / TAREFAS
 -- ===================================================
+
+-- TABELA: status_ordem_servico
+-- Descrição: Define os status utilizados nas ordens de serviço e tarefas.
+-- Dependências: -
+
 CREATE TABLE status_ordem_servico(
     id        SERIAL PRIMARY KEY,
     nome      VARCHAR(100) NOT NULL,
     descricao VARCHAR(255)
 );
 
-CREATE TABLE ordem_servico(
-    id                      SERIAL PRIMARY KEY,
-    problema_id             INTEGER NOT NULL REFERENCES problema(id),
-    usuario_id              INTEGER NOT NULL REFERENCES usuario(id),
-    status_ordem_servico_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    categoria_problema      INTEGER NOT NULL,
-    data_prevista           TIMESTAMP NOT NULL,
-    prioridade              INTEGER NOT NULL,
-    data_criacao            TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT ck_prioridade_os_0_a_2 
+-- TABELA: ordem_servico
+-- Descrição: Registra as ordens de serviço e seu acompanhamento.
+-- Dependências: problema, usuario, status_ordem_servico
+
+CREATE TABLE ordem_servico(
+    id                       SERIAL PRIMARY KEY,
+    problema_id              INTEGER NOT NULL REFERENCES problema(id),
+    usuario_id               INTEGER NOT NULL REFERENCES usuario(id),
+    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    categoria_problema       INTEGER NOT NULL,
+    data_prevista            TIMESTAMP NOT NULL,
+    prioridade               INTEGER NOT NULL,
+    data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_prioridade_os_0_a_2
         CHECK (prioridade >= 0 AND prioridade <= 2)
 );
 
+
+-- TABELA: ordem_servico_status_historico
+-- Descrição: Mantém o histórico de status das ordens de serviço.
+-- Dependências: ordem_servico, status_ordem_servico
+
 CREATE TABLE ordem_servico_status_historico(
-    id                      SERIAL PRIMARY KEY,
-    ordem_servico_id        INTEGER NOT NULL REFERENCES ordem_servico(id),
-    status_ordem_servico_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_atualizacao        TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       SERIAL PRIMARY KEY,
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
+    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+
+-- TABELA: tarefa
+-- Descrição: Registra as tarefas vinculadas às ordens de serviço.
+-- Dependências: ordem_servico, status_ordem_servico
 
 CREATE TABLE tarefa(
-    id                      SERIAL PRIMARY KEY,
-    ordem_servico_id        INTEGER NOT NULL REFERENCES ordem_servico(id),
-    status_ordem_servico_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    titulo                  VARCHAR(100) NOT NULL,
-    descricao               VARCHAR(255) NOT NULL,
-    data_criacao            TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       SERIAL PRIMARY KEY,
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
+    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    titulo                   VARCHAR(100) NOT NULL,
+    descricao                VARCHAR(255) NOT NULL,
+    data_criacao             TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
+-- TABELA: tarefa_status_historico
+-- Descrição: Mantém o histórico de status das tarefas.
+-- Dependências: tarefa, status_ordem_servico
+
 CREATE TABLE tarefa_status_historico(
-    id                      SERIAL PRIMARY KEY,
-    tarefa_id               INTEGER NOT NULL REFERENCES tarefa(id),
-    status_ordem_servico_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_atualizacao        TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       SERIAL PRIMARY KEY,
+    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id),
+    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
 
 -- ===================================================
 -- FOTOS / TURNOS / OBSERVAÇÕES DE CONCLUSÃO
 -- ===================================================
+
+-- TABELA: observacao_conclusao
+-- Descrição: Armazena observações relacionadas à conclusão das ordens.
+-- Dependências: ordem_servico
+
 CREATE TABLE observacao_conclusao(
     id               SERIAL PRIMARY KEY,
     ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id),
@@ -281,31 +402,41 @@ CREATE TABLE observacao_conclusao(
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
+-- TABELA: foto
+-- Descrição: Armazena fotos associadas às entidades do sistema.
+-- Dependências: problema, ocorrencia, ordem_servico, observacao_conclusao, usuario
+
 CREATE TABLE foto(
-    id                      SERIAL PRIMARY KEY,
-    problema_id             INTEGER REFERENCES problema(id),
-    ocorrencia_id           INTEGER REFERENCES ocorrencia(id),
-    ordem_servico_id        INTEGER REFERENCES ordem_servico(id),
-    observacao_conclusao_id INTEGER REFERENCES observacao_conclusao(id),
-    usuario_id              INTEGER REFERENCES usuario(id),
-    url                     VARCHAR(255) NOT NULL,
-    esta_ativo              BOOLEAN NOT NULL DEFAULT TRUE,
-    data_criacao            TIMESTAMP NOT NULL DEFAULT NOW(),
+    id                       SERIAL PRIMARY KEY,
+    problema_id              INTEGER REFERENCES problema(id),
+    ocorrencia_id            INTEGER REFERENCES ocorrencia(id),
+    ordem_servico_id         INTEGER REFERENCES ordem_servico(id),
+    observacao_conclusao_id  INTEGER REFERENCES observacao_conclusao(id),
+    usuario_id               INTEGER REFERENCES usuario(id),
+    url                      VARCHAR(255) NOT NULL,
+    esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
+    data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_foto_apenas_uma_fk
         CHECK (
-            (CASE WHEN problema_id             IS NOT NULL THEN 1 ELSE 0 END) +
-            (CASE WHEN ocorrencia_id           IS NOT NULL THEN 1 ELSE 0 END) +
-            (CASE WHEN ordem_servico_id        IS NOT NULL THEN 1 ELSE 0 END) +
-            (CASE WHEN observacao_conclusao_id IS NOT NULL THEN 1 ELSE 0 END) +
-            (CASE WHEN usuario_id              IS NOT NULL THEN 1 ELSE 0 END)
+            (CASE WHEN problema_id              IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN ocorrencia_id            IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN ordem_servico_id         IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN observacao_conclusao_id  IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN usuario_id               IS NOT NULL THEN 1 ELSE 0 END)
             = 1
         )
 );
 
+
+-- TABELA: turno
+-- Descrição: Define os turnos de funcionamento dos endereços.
+-- Dependências: endereco
+
 CREATE TABLE turno(
     id                   SERIAL PRIMARY KEY,
-    endereco_id    INTEGER REFERENCES endereco(id) NOT NULL,
+    endereco_id          INTEGER REFERENCES endereco(id) NOT NULL,
     nome                 VARCHAR(100) NOT NULL,
     hora_inicio          INTEGER NOT NULL,
     hora_fim             INTEGER NOT NULL,
@@ -323,9 +454,14 @@ CREATE TABLE turno(
         CHECK (
             (atravessa_meia_noite = FALSE AND hora_inicio < hora_fim)
             OR
-            (atravessa_meia_noite = TRUE  AND hora_inicio > hora_fim)
+            (atravessa_meia_noite = TRUE AND hora_inicio > hora_fim)
         )
 );
+
+
+-- TABELA: turno_usuario
+-- Descrição: Relaciona usuários aos seus respectivos turnos.
+-- Dependências: turno, usuario
 
 CREATE TABLE turno_usuario(
     id           SERIAL PRIMARY KEY,
@@ -334,5 +470,7 @@ CREATE TABLE turno_usuario(
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT uk_turno_usuario UNIQUE (turno_id, usuario_id)
+    CONSTRAINT uk_turno_usuario
+        UNIQUE (turno_id, usuario_id)
 );
+```
