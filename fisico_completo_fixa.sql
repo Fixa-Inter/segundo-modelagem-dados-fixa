@@ -145,6 +145,7 @@ CREATE TABLE pagamento(
 CREATE TABLE usuario(
     id              SERIAL PRIMARY KEY,
     gerente_id      INTEGER REFERENCES usuario(id),
+    endereco_id     INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo   VARCHAR(100) NOT NULL,
     email           VARCHAR(100) NOT NULL UNIQUE,
     tipo_acesso     INTEGER NOT NULL,
