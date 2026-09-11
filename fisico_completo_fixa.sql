@@ -150,6 +150,7 @@ CREATE TABLE usuario(
     email           VARCHAR(100) NOT NULL UNIQUE,
     tipo_acesso     INTEGER NOT NULL,
     senha_hash      VARCHAR(255) NOT NULL,
+    cargo           VARCHAR(100) NOT NULL,
     data_nascimento DATE NOT NULL,
     data_criacao    TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo      BOOLEAN NOT NULL DEFAULT FALSE,
