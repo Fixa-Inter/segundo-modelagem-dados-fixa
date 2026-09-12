@@ -16,13 +16,19 @@ Use obrigatoriamente os seguintes códigos de enum, conforme implementados na AP
   4 = Órgão Público
 
 - contrato.status:
-  Não há enum correspondente implementado na API. Defina os valores antes de gerar a carga.
+  1 = Ativo
+  2 = Inativo
+  3 = Cancelado
 
 - pagamento.status:
-  Não há enum correspondente implementado na API. Defina os valores antes de gerar a carga.
+  1 = Finalizado
+  2 = Pendente
+  3 = Cancelado
 
 - pagamento.metodo_pagamento:
-  Não há enum correspondente implementado na API. Defina os valores antes de gerar a carga.
+  1 = Crédito
+  2 = Débito
+  3 = Pix
 
 - usuario.tipo_acesso:
   1 = Administrador
@@ -52,8 +58,8 @@ Use obrigatoriamente os seguintes códigos de enum, conforme implementados na AP
 
 - problema.status:
   0 = Pendente
-  1 = Reprovado
-  2 = Aprovado
+  1 = Aprovado
+  2 = Reprovado
 
 - ocorrencia.prioridade:
   Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
