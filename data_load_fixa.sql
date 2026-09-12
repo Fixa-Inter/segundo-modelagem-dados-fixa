@@ -3,413 +3,427 @@
 -- Requisito: carga inicial de pelo menos 500 registros
 -- verossímeis para testes de volume.
 -- ---------------------------------------------------
--- Total gerado por este script: ~839 registros
+-- Total gerado por este script: ~835 registros
 -- ---------------------------------------------------
 -- OBS 1: Execução sequencial pós-DDL em banco limpo,
---        considerando IDs SERIAL/BIGSERIAL iniciando 
---        em 1 sem lacunas.
--- OBS 2: Mapeamento de enums/códigos inteiros assumido:
+--        considerando IDs SERIAL iniciando em 1 sem
+--        lacunas (nenhum INSERT/DELETE anterior).
+-- OBS 2: Mapeamento de enums/códigos inteiros (fonte:
+--        tabela de enums mais recente fornecida):
 --        • instituicao.tipo_instituicao        -> 1=Escola, 2=Faculdade, 3=Empresa, 4=Órgão Público
---        • problema.status                     -> 0=Pendente, 1=Aprovado, 2=Reprovado
+--        • contrato.status                     -> 1=Ativo, 2=Inativo, 3=Cancelado
+--        • pagamento.status                    -> 1=Finalizado, 2=Pendente, 3=Cancelado
+--        • pagamento.metodo_pagamento          -> 1=Crédito, 2=Débito, 3=Pix
 --        • usuario.tipo_acesso                 -> 1=Administrador, 2=Gestor, 3=Técnico, 4=Solicitante
---        • pagamento.metodo_pagamento          -> 1=Boleto, 2=Cartão de Crédito, 3=PIX, 4=Transferência
---        • local_endereco.tipo_local_endereco  -> 1=Sala de Aula, 2=Laboratório, 3=Depto. Admin, 4=Auditório, 5=Almoxarifado, 6=Área Comum
---        • categoria_problema                  -> 1=Elétrica, 2=Hidráulica, 3=Mecânica, 4=Informática, 5=Mobiliário, 6=Climatização, 7=Rede, 8=Segurança, 9=Iluminação, 10=Limpeza
+--        • categoria_problema (aptidao/ocorrencia/ordem_servico)
+--                                               -> 1=Elétrica, 2=Hidráulica, 3=Mecânica, 4=Informática,
+--                                                  5=Mobiliário, 6=Climatização, 7=Rede e Conectividade,
+--                                                  8=Segurança, 9=Iluminação, 10=Limpeza e Conservação
+--        • local_endereco.tipo_local_endereco  -> 1=Sala de Aula, 2=Laboratório, 3=Depto. Administrativo,
+--                                                  4=Auditório, 5=Almoxarifado, 6=Área Comum
+--        • problema.status                     -> 0=Pendente, 1=Aprovado, 2=Reprovado
+--        • ocorrencia.prioridade / ordem_servico.prioridade
+--                                               -> sem enum nomeado nas APIs; apenas CHECK 0 a 2
 -- OBS 3: Arco exclusivo em `foto` (`ck_foto_apenas_uma_fk`): exatamente 1 FK preenchida por registro.
--- OBS 4: `turno.hora_inicio` e `turno.hora_fim` como INTEGER em segundos (0 a 86400), validando `atravessa_meia_noite`.
--- OBS 5: Mapeamento 1:1 estrito entre `ordem_servico` e `problema`.
--- OBS 6: Integridade referencial (FKs) garantida por limites dinâmicos ajustados ao volume das tabelas pai.
+-- OBS 4: `turno.hora_inicio`/`hora_fim` em segundos (0 a 86400), respeitando `atravessa_meia_noite`.
+-- OBS 5: Mapeamento 1:1 estrito entre `ordem_servico` e `problema`: SOMENTE problemas com
+--        status = 1 (Aprovado) geram ordem de serviço.
+-- OBS 6: `problema.motivo_recusa` preenchido única e exclusivamente quando status = 2 (Reprovado),
+--        respeitando `ck_motivo_recusa_status_recusado`.
+-- OBS 7: Integridade referencial garantida via ranges de ID fixos e conhecidos (ver contagens
+--        por tabela nos comentários de cada bloco).
 -- ===================================================
+
 BEGIN;
 
--- ---------------------------------------------------
--- TABELAS TEMPORÁRIAS DE APOIO
--- ---------------------------------------------------
-
-DROP TABLE IF EXISTS tmp_nomes, tmp_sobrenomes, tmp_cidades, tmp_ruas, tmp_bairros, tmp_instituicoes;
-
-CREATE TEMP TABLE tmp_nomes(nome varchar);
-INSERT INTO tmp_nomes VALUES
-('Ana'),('Bruno'),('Carlos'),('Daniela'),('Eduardo'),('Fernanda'),('Gustavo'),('Helena'),
-('Igor'),('Juliana'),('Lucas'),('Mariana'),('Nicolas'),('Otávio'),('Patrícia'),('Rafael'),
-('Sabrina'),('Thiago'),('Vanessa'),('William'),('Camila'),('Diego'),('Elaine'),('Felipe'),
-('Gabriela'),('Henrique'),('Isabela'),('João'),('Karina'),('Leonardo');
-
-CREATE TEMP TABLE tmp_sobrenomes(sobrenome varchar);
-INSERT INTO tmp_sobrenomes VALUES
-('Silva'),('Santos'),('Oliveira'),('Souza'),('Rodrigues'),('Ferreira'),('Alves'),('Pereira'),
-('Lima'),('Gomes'),('Costa'),('Ribeiro'),('Martins'),('Carvalho'),('Almeida'),('Lopes'),
-('Soares'),('Fernandes'),('Vieira'),('Barbosa');
-
-CREATE TEMP TABLE tmp_cidades(cidade varchar, estado varchar);
-INSERT INTO tmp_cidades VALUES
-('São Paulo','SP'),('Rio de Janeiro','RJ'),('Belo Horizonte','MG'),('Curitiba','PR'),
-('Porto Alegre','RS'),('Salvador','BA'),('Recife','PE'),('Fortaleza','CE'),
-('Brasília','DF'),('Campinas','SP'),('Florianópolis','SC'),('Goiânia','GO'),
-('Manaus','AM'),('Belém','PA'),('Vitória','ES');
-
-CREATE TEMP TABLE tmp_ruas(logradouro varchar);
-INSERT INTO tmp_ruas VALUES
-('Rua das Flores'),('Avenida Brasil'),('Rua XV de Novembro'),('Avenida Paulista'),
-('Rua Sete de Setembro'),('Rua dos Andradas'),('Avenida Getúlio Vargas'),('Rua São João'),
-('Rua Barão do Rio Branco'),('Avenida Rio Branco');
-
-CREATE TEMP TABLE tmp_bairros(bairro varchar);
-INSERT INTO tmp_bairros VALUES
-('Centro'),('Jardim América'),('Vila Nova'),('Bela Vista'),('Boa Vista'),
-('Santa Cecília'),('Cidade Alta'),('Parque Industrial'),('Vila Mariana'),('Jardim Europa');
-
-CREATE TEMP TABLE tmp_instituicoes(nome varchar);
-INSERT INTO tmp_instituicoes VALUES
-('Colégio Nova Geração'),('Instituto Educacional Horizonte'),('Faculdade Central do Brasil'),
-('Escola Técnica Progresso'),('Universidade Metropolitana'),('Centro Educacional Aurora'),
-('Colégio Santa Clara'),('Instituto Tecnológico Vanguarda'),('Escola Municipal Pioneira'),
-('Faculdade Integrada do Vale');
+-- ===================================================
+-- 1) super_admin (3)
+-- ===================================================
+INSERT INTO super_admin (nome, email, senha_hash, esta_ativo) VALUES
+('Rafael Monteiro', 'rafael.monteiro@plataforma.com', 'hash_senha_001', TRUE),
+('Juliana Prado',    'juliana.prado@plataforma.com',   'hash_senha_002', TRUE),
+('Marcelo Nogueira', 'marcelo.nogueira@plataforma.com','hash_senha_003', FALSE);
 
 -- ===================================================
--- TABELAS BASE (ADMIN / INSTITUIÇÃO)
+-- 2) instituicao (5)
 -- ===================================================
-
--- super_admin (3)
-INSERT INTO super_admin (nome, email, senha, esta_ativo) VALUES
-('Rodrigo Almeida Souza','rodrigo.admin@sistema.com','$2a$10$hashfake0001', true),
-('Camila Ferreira Lima','camila.admin@sistema.com','$2a$10$hashfake0002', true),
-('Bruno Costa Martins','bruno.admin@sistema.com','$2a$10$hashfake0003', true);
-
--- instituicao (10)
-INSERT INTO instituicao (nome, cnpj, tipo_instituicao, dominio_email, data_criacao, esta_ativo)
+INSERT INTO instituicao (nome, cnpj, tipo_instituicao, dominio_email, esta_ativo)
 SELECT
-    (SELECT nome FROM tmp_instituicoes ORDER BY random() LIMIT 1) || ' ' || gs,
-    '12.345.' || lpad(gs::text,3,'0') || '/0001-' || lpad((gs%90+10)::text,2,'0'),
-    floor(random()*4+1)::int,
-    'instituicao' || gs || '.com.br',
-    NOW() - (random()*3650 || ' days')::interval,
-    true
-FROM generate_series(1,10) gs;
-
--- endereco (12)
-INSERT INTO endereco (instituicao_id, logradouro, numero, complemento, bairro, cidade, estado, pais, cep, data_criacao, esta_ativo)
-SELECT
-    floor(random()*10+1)::int,
-    (SELECT logradouro FROM tmp_ruas ORDER BY random() LIMIT 1),
-    (floor(random()*2000+1))::text,
-    CASE WHEN random() < 0.3 THEN 'Sala ' || floor(random()*20+1)::text ELSE NULL END,
-    (SELECT bairro FROM tmp_bairros ORDER BY random() LIMIT 1),
-    c.cidade,
-    c.estado,
-    'Brasil',
-    lpad(floor(random()*99999999)::text,8,'0'),
-    NOW() - (random()*3650 || ' days')::interval,
-    true
-FROM generate_series(1,12) gs
-CROSS JOIN LATERAL (SELECT cidade, estado FROM tmp_cidades ORDER BY random() LIMIT 1) c;
+    (ARRAY['Colégio Horizonte','Faculdade Vértice','Indústrias Aurora','Secretaria Municipal de Obras','Instituto Educacional Nova Era'])[n],
+    LPAD((10000000000000 + n * 137)::text, 14, '0'),
+    (ARRAY[1,2,3,4,1])[n],
+    (ARRAY['colegiohorizonte.edu.br','faculdadevertice.edu.br','industriasaurora.com.br','sec-obras.gov.br','institutonovaera.edu.br'])[n],
+    TRUE
+FROM generate_series(1,5) AS n;
 
 -- ===================================================
--- FLUXO PLANO / PAGAMENTO
+-- 3) endereco (10) — 2 por instituição
 -- ===================================================
-
--- plano (5)
-INSERT INTO plano (nome, valor, descricao, duracao_meses, data_criacao, esta_ativo) VALUES
-('Plano Básico', 99.90, 'Plano mensal com funcionalidades essenciais', 1, NOW() - interval '365 days', true),
-('Plano Padrão', 249.90, 'Plano trimestral com suporte prioritário', 3, NOW() - interval '365 days', true),
-('Plano Semestral', 449.90, 'Plano semestral com relatórios avançados', 6, NOW() - interval '365 days', true),
-('Plano Anual', 799.90, 'Plano anual com todos os módulos liberados', 12, NOW() - interval '365 days', true),
-('Plano Enterprise', 1499.90, 'Plano anual para grandes instituições, com suporte dedicado', 12, NOW() - interval '365 days', true);
-
--- contrato (15)
-INSERT INTO contrato (plano_id, endereco_id, data_inicio, data_fim, status, data_criacao)
+INSERT INTO endereco (instituicao_id, logradouro, numero, complemento, bairro, cidade, estado, cep, esta_ativo)
 SELECT
-    pl.id,
-    floor(random()*12+1)::int,
-    x.d_inicio,
-    (x.d_inicio + (pl.duracao_meses || ' months')::interval)::date,
-    floor(random()*3)::int,
-    NOW() - (random()*365 || ' days')::interval
-FROM generate_series(1,15) gs
-CROSS JOIN LATERAL (SELECT id, duracao_meses FROM plano ORDER BY random() LIMIT 1) pl
-CROSS JOIN LATERAL (SELECT CURRENT_DATE - (floor(random()*730))::int AS d_inicio) x;
-
--- pagamento (30)
-INSERT INTO pagamento (contrato_id, data_pagamento, valor_pago, status, metodo_pagamento, data_criacao)
-SELECT
-    floor(random()*15+1)::int,
-    CURRENT_DATE - floor(random()*365)::int,
-    round((random()*1400+49.9)::numeric,2),
-    floor(random()*3)::int,
-    floor(random()*4+1)::int,
-    NOW() - (random()*365 || ' days')::interval
-FROM generate_series(1,30);
+    ((n-1)/2)+1,
+    (ARRAY['Rua das Acácias','Av. Paulista','Rua Sete de Setembro','Rua dos Andradas','Av. Brasil','Rua XV de Novembro','Rua Marechal Deodoro','Av. Ipiranga','Rua Barão do Rio Branco','Rua Voluntários da Pátria'])[n],
+    (100 + n * 10)::text,
+    CASE WHEN n % 3 = 0 THEN 'Bloco ' || n ELSE NULL END,
+    (ARRAY['Centro','Jardim América','Vila Nova','Boa Vista','Santa Cecília','Cidade Alta','Bela Vista','Alto da Glória','Jardim Europa','Vila Industrial'])[n],
+    (ARRAY['São Paulo','Campinas','Curitiba','Porto Alegre','Belo Horizonte','Salvador','Recife','Fortaleza','Brasília','Florianópolis'])[n],
+    (ARRAY['SP','SP','PR','RS','MG','BA','PE','CE','DF','SC'])[n],
+    LPAD((1000000 + n * 111)::text, 8, '0'),
+    TRUE
+FROM generate_series(1,10) AS n;
 
 -- ===================================================
--- USUÁRIOS / APTIDÃO
+-- 4) plano (4)
 -- ===================================================
-
--- usuario (60)
-INSERT INTO usuario (nome_completo, email, tipo_acesso, senha_hash, data_nascimento, data_criacao, esta_ativo)
-SELECT
-    nomes.arr[1 + floor(random()*array_length(nomes.arr,1))::int] || ' ' ||
-    sobrenomes.arr[1 + floor(random()*array_length(sobrenomes.arr,1))::int],
-    lower(
-        nomes.arr[1 + floor(random()*array_length(nomes.arr,1))::int] || '.' ||
-        sobrenomes.arr[1 + floor(random()*array_length(sobrenomes.arr,1))::int] || gs || '@email.com'
-    ),
-    floor(random()*4+1)::int,
-    '$2a$10$hashfakeuser' || lpad(gs::text,4,'0'),
-    CURRENT_DATE - (floor(random()*365*47)+365*18)::int,
-    NOW() - (random()*1000 || ' days')::interval,
-    (random() < 0.9)
-FROM generate_series(1,60) gs
-CROSS JOIN (SELECT array_agg(nome) AS arr FROM tmp_nomes) nomes
-CROSS JOIN (SELECT array_agg(sobrenome) AS arr FROM tmp_sobrenomes) sobrenomes;
-
--- aptidao (60)
-INSERT INTO aptidao (usuario_id, categoria_problema, nota, data_criacao, esta_ativo)
-SELECT
-    floor(random()*60+1)::int,
-    floor(random()*10+1)::int,
-    round((random()*10)::numeric,2),
-    NOW() - (random()*500 || ' days')::interval,
-    true
-FROM generate_series(1,60);
+INSERT INTO plano (nome, valor, descricao, duracao_meses, esta_ativo) VALUES
+('Plano Básico',      499.90,  'Suporte a chamados essenciais com SLA padrão.', 12, TRUE),
+('Plano Intermediário',899.90, 'Inclui gestão de equipamentos e turnos.',        12, TRUE),
+('Plano Avançado',    1599.90, 'Recursos completos com relatórios avançados.',   24, TRUE),
+('Plano Corporativo', 2999.90, 'Atendimento dedicado para múltiplas unidades.',  36, TRUE);
 
 -- ===================================================
--- LOCAIS / EVENTOS / TURNOS
+-- 5) contrato (10) — 1 por endereço
 -- ===================================================
-
--- local_endereco (30)
-INSERT INTO local_endereco (endereco_id, nome, tipo_local_endereco, descricao, data_criacao, esta_ativo)
+INSERT INTO contrato (plano_id, endereco_id, data_inicio, data_fim, status)
 SELECT
-    floor(random()*12+1)::int,
-    'Sala ' || gs,
-    floor(random()*6+1)::int,
-    'Ambiente ' || gs || ' destinado a atividades diversas da instituição',
-    NOW() - (random()*400 || ' days')::interval,
-    true
-FROM generate_series(1,30) gs;
-
--- evento (25)
-INSERT INTO evento (usuario_id, local_endereco_id, titulo, descricao, descricao_local, observacao, data_hora_inicio, data_hora_fim, data_criacao)
-SELECT
-    floor(random()*60+1)::int,
-    floor(random()*30+1)::int,
-    'Evento ' || gs,
-    'Descrição do evento número ' || gs || ' organizado na instituição',
-    'Local reservado para o evento',
-    CASE WHEN random() < 0.4 THEN 'Necessário confirmar presença com antecedência' ELSE NULL END,
-    t.ts_inicio,
-    t.ts_inicio + interval '2 hours',
-    NOW() - (random()*300 || ' days')::interval
-FROM generate_series(1,25) gs
-CROSS JOIN LATERAL (SELECT NOW() + (floor(random()*60-30) || ' days')::interval AS ts_inicio) t;
-
--- turno (30) -> horário armazenado em segundos
-INSERT INTO turno (local_endereco_id, nome, hora_inicio, hora_fim, atravessa_meia_noite, data_criacao, esta_ativo)
-SELECT
-    floor(random()*30+1)::int,
-    t.nome_turno || ' ' || gs,
-    t.h_inicio,
-    t.h_fim,
-    t.meia_noite,
-    NOW() - (random()*300 || ' days')::interval,
-    true
-FROM generate_series(1,30) gs
-CROSS JOIN LATERAL (
-    SELECT 
-        CASE (gs % 3)
-            WHEN 1 THEN 'Turno Matutino'
-            WHEN 2 THEN 'Turno Vespertino'
-            ELSE 'Turno Noturno'
-        END AS nome_turno,
-        CASE (gs % 3)
-            WHEN 1 THEN 25200  -- 07:00
-            WHEN 2 THEN 46800  -- 13:00
-            ELSE 79200         -- 22:00
-        END AS h_inicio,
-        CASE (gs % 3)
-            WHEN 1 THEN 43200  -- 12:00
-            WHEN 2 THEN 64800  -- 18:00
-            ELSE 21600         -- 06:00
-        END AS h_fim,
-        CASE WHEN (gs % 3) = 0 THEN true ELSE false END AS meia_noite
-) t;
-
--- turno_usuario (40)
-INSERT INTO turno_usuario (turno_id, usuario_id, data_criacao, esta_ativo)
-SELECT
-    floor(random()*30+1)::int,
-    floor(random()*60+1)::int,
-    NOW() - (random()*200 || ' days')::interval,
-    true
-FROM generate_series(1,40) gs;
+    ((n-1) % 4) + 1,
+    n,
+    (CURRENT_DATE - ((n * 45) || ' days')::interval)::date,
+    (CURRENT_DATE - ((n * 45) || ' days')::interval + interval '12 months')::date,
+    ((n % 3) + 1)
+FROM generate_series(1,10) AS n;
 
 -- ===================================================
--- EQUIPAMENTOS / PROBLEMAS / OCORRÊNCIAS
+-- 6) pagamento (20) — 2 por contrato
 -- ===================================================
-
--- categoria_equipamento (8)
-INSERT INTO categoria_equipamento (usuario_id, nome, descricao, data_criacao, esta_ativo)
+INSERT INTO pagamento (contrato_id, data_pagamento, valor_pago, status, metodo_pagamento)
 SELECT
-    floor(random()*60+1)::int,
-    cat.nome,
-    'Categoria de equipamentos do tipo ' || cat.nome,
-    NOW() - (random()*400 || ' days')::interval,
-    true
-FROM generate_series(1,8) gs
-CROSS JOIN LATERAL (
-    SELECT (ARRAY['Informática','Mobiliário','Audiovisual','Climatização',
-                  'Elétrica','Segurança','Laboratorial','Comunicação'])[gs] AS nome
-) cat;
-
--- marca_equipamento (10)
-INSERT INTO marca_equipamento (nome, descricao, data_criacao, esta_ativo) VALUES
-('Dell','Fabricante de equipamentos de informática', NOW()-interval '500 days', true),
-('HP','Fabricante de equipamentos de informática e impressão', NOW()-interval '490 days', true),
-('Lenovo','Fabricante de notebooks e desktops', NOW()-interval '480 days', true),
-('Samsung','Fabricante de eletrônicos diversos', NOW()-interval '470 days', true),
-('LG','Fabricante de eletrônicos e climatização', NOW()-interval '460 days', true),
-('Positivo','Fabricante nacional de equipamentos de informática', NOW()-interval '450 days', true),
-('Epson','Fabricante de impressoras e projetores', NOW()-interval '440 days', true),
-('Intelbras','Fabricante de equipamentos de segurança e redes', NOW()-interval '430 days', true),
-('Consul','Fabricante de eletrodomésticos', NOW()-interval '420 days', true),
-('Springer','Fabricante de equipamentos de climatização', NOW()-interval '410 days', true);
-
--- modelo_equipamento (20)
-INSERT INTO modelo_equipamento (marca_equipamento_id, categoria_equipamento_id, nome, descricao, data_criacao, esta_ativo)
-SELECT
-    floor(random()*10+1)::int,
-    floor(random()*8+1)::int,
-    'Modelo ' || gs,
-    'Modelo de equipamento número ' || gs,
-    NOW() - (random()*400 || ' days')::interval,
-    true
-FROM generate_series(1,20) gs;
-
--- equipamento (50)
-INSERT INTO equipamento (usuario_id, modelo_equipamento_id, local_endereco_id, codigo, data_criacao, esta_ativo)
-SELECT
-    floor(random()*60+1)::int,
-    floor(random()*20+1)::int,
-    floor(random()*30+1)::int,
-    'EQP-' || lpad(gs::text,5,'0'),
-    NOW() - (random()*300 || ' days')::interval,
-    true
-FROM generate_series(1,50) gs;
-
--- problema (40)
-INSERT INTO problema (usuario_id, categoria_equipamento_id, local_endereco_id, titulo, descricao_problema, descricao_local, data_criacao, status)
-SELECT
-    floor(random()*60+1)::int,
-    floor(random()*8+1)::int,
-    floor(random()*30+1)::int,
-    'Problema relatado ' || gs,
-    'Descrição detalhada do problema número ' || gs || ' identificado no equipamento',
-    'Localização informada pelo solicitante',
-    NOW() - (random()*300 || ' days')::interval,
-    floor(random()*3)::int
-FROM generate_series(1,40) gs;
-
--- ocorrencia (40)
-INSERT INTO ocorrencia (usuario_id, local_endereco_id, equipamento_id, categoria_problema, titulo, descricao_ocorrencia, descricao_local, data_criacao, esta_ativo)
-SELECT
-    floor(random()*60+1)::int,
-    floor(random()*30+1)::int,
-    floor(random()*50+1)::int,
-    floor(random()*10+1)::int,
-    'Ocorrência ' || gs,
-    'Descrição detalhada da ocorrência número ' || gs,
-    'Localização informada no registro da ocorrência',
-    NOW() - (random()*300 || ' days')::interval,
-    true
-FROM generate_series(1,40) gs;
+    ((n-1)/2)+1,
+    NOW() - ((n * 15) || ' days')::interval,
+    (ARRAY[499.90,899.90,1599.90,2999.90])[(((n-1)/2) % 4) + 1],
+    ((n % 3) + 1),
+    ((n % 3) + 1)
+FROM generate_series(1,20) AS n;
 
 -- ===================================================
--- ORDEM DE SERVIÇO / TAREFAS
+-- 7) usuario (60)
+--    1-5   Administradores (gerente_id NULL)
+--    6-15  Gestores        (gerente_id = administrador)
+--    16-40 Técnicos        (gerente_id = gestor)
+--    41-60 Solicitantes    (gerente_id = gestor)
 -- ===================================================
+INSERT INTO usuario (gerente_id, endereco_id, nome_completo, email, tipo_acesso, senha_hash, cargo, data_nascimento, esta_ativo, primeiro_acesso)
+SELECT
+    CASE
+        WHEN n <= 5  THEN NULL
+        WHEN n <= 15 THEN ((n-6) % 5) + 1
+        WHEN n <= 40 THEN 6 + ((n-16) % 10)
+        ELSE               6 + ((n-41) % 10)
+    END AS gerente_id,
+    ((n-1) % 10) + 1 AS endereco_id,
+    (ARRAY['Ana','Bruno','Carla','Diego','Elaine','Fábio','Gabriela','Heitor','Iris','João',
+           'Karina','Leandro','Marina','Nelson','Otávia','Paulo','Queila','Rodrigo','Sabrina','Tiago'])[((n-1) % 20)+1]
+    || ' ' ||
+    (ARRAY['Almeida','Barbosa','Cardoso','Dias','Esteves','Farias','Gonçalves','Henriques','Ibrahim','Junqueira',
+           'Klein','Lopes','Martins','Nascimento','Oliveira','Pires','Quintana','Ribeiro','Sales','Teixeira'])[((n*7-1) % 20)+1]
+    AS nome_completo,
+    'usuario' || n || '@plataforma.com',
+    CASE
+        WHEN n <= 5  THEN 1
+        WHEN n <= 15 THEN 2
+        WHEN n <= 40 THEN 3
+        ELSE               4
+    END AS tipo_acesso,
+    'hash_senha_' || LPAD(n::text, 3, '0'),
+    CASE
+        WHEN n <= 5  THEN 'Administrador de Plataforma'
+        WHEN n <= 15 THEN 'Gestor de Facilities'
+        WHEN n <= 40 THEN 'Técnico de Manutenção'
+        ELSE               'Solicitante'
+    END AS cargo,
+    (DATE '1975-01-01' + ((n * 137) || ' days')::interval)::date,
+    (n % 4) <> 0,
+    (n % 5) = 0
+FROM generate_series(1,60) AS n;
 
--- status_ordem_servico (6)
+-- ===================================================
+-- 8) aptidao (50) — apenas técnicos (usuario_id 16-40), 2 categorias por técnico
+-- ===================================================
+INSERT INTO aptidao (usuario_id, categoria_problema, nota, esta_ativo)
+SELECT
+    usuario_id,
+    categoria_problema,
+    nota,
+    TRUE
+FROM (
+    SELECT
+        16 + k AS usuario_id,
+        (k % 10) + 1 AS categoria_problema,
+        ROUND((5 + (k % 5) * 0.9)::numeric, 2) AS nota
+    FROM generate_series(0,24) AS k
+    UNION ALL
+    SELECT
+        16 + k AS usuario_id,
+        ((k + 3) % 10) + 1 AS categoria_problema,
+        ROUND((6 + (k % 4) * 1.1)::numeric, 2) AS nota
+    FROM generate_series(0,24) AS k
+) AS aptidoes;
+
+-- ===================================================
+-- 9) local_endereco (40) — 4 por endereço
+-- ===================================================
+INSERT INTO local_endereco (endereco_id, nome, tipo_local_endereco, descricao, esta_ativo)
+SELECT
+    ((n-1)/4)+1,
+    (ARRAY['Sala 101','Laboratório de Informática','Depto. Administrativo','Auditório Principal',
+           'Almoxarifado Central','Área de Convivência','Sala 202','Laboratório de Química'])[((n-1) % 8)+1]
+    || ' - Bloco ' || (((n-1)/4)+1),
+    (ARRAY[1,2,3,4,5,6,1,2])[((n-1) % 8)+1],
+    'Local utilizado para atividades cotidianas da unidade.',
+    TRUE
+FROM generate_series(1,40) AS n;
+
+-- ===================================================
+-- 10) evento (30)
+-- ===================================================
+INSERT INTO evento (usuario_id, local_endereco_id, titulo, descricao, descricao_local, observacao, data_hora_inicio, data_hora_fim)
+SELECT
+    ((n-1) % 60) + 1,
+    ((n-1) % 40) + 1,
+    'Manutenção Preventiva ' || n,
+    'Evento de manutenção preventiva programada.',
+    'Local conforme cadastro do setor.',
+    CASE WHEN n % 4 = 0 THEN 'Requer acompanhamento do responsável do setor.' ELSE NULL END,
+    NOW() + ((n * 2) || ' days')::interval,
+    NOW() + ((n * 2) || ' days')::interval + interval '2 hours'
+FROM generate_series(1,30) AS n;
+
+-- ===================================================
+-- 11) categoria_equipamento (10)
+-- ===================================================
+INSERT INTO categoria_equipamento (usuario_id, nome, descricao, esta_ativo)
+SELECT
+    ((n-1) % 10) + 1,
+    (ARRAY['Informática','Elétrica','Mobiliário','Climatização','Iluminação',
+           'Hidráulica','Segurança','Rede','Limpeza','Mecânica'])[n],
+    'Categoria utilizada para classificação de equipamentos.',
+    TRUE
+FROM generate_series(1,10) AS n;
+
+-- ===================================================
+-- 12) marca_equipamento (8)
+-- ===================================================
+INSERT INTO marca_equipamento (nome, descricao, esta_ativo) VALUES
+('TechLine',   'Fabricante de equipamentos de informática.', TRUE),
+('ClimaMax',   'Fabricante de equipamentos de climatização.', TRUE),
+('LuxLight',   'Fabricante de equipamentos de iluminação.',   TRUE),
+('HidroPro',   'Fabricante de equipamentos hidráulicos.',     TRUE),
+('SegurTech',  'Fabricante de equipamentos de segurança.',    TRUE),
+('MobiliaBras','Fabricante de mobiliário corporativo.',       TRUE),
+('RedeTotal',  'Fabricante de equipamentos de rede.',         TRUE),
+('MecanixCo',  'Fabricante de componentes mecânicos.',        TRUE);
+
+-- ===================================================
+-- 13) modelo_equipamento (20)
+-- ===================================================
+INSERT INTO modelo_equipamento (marca_equipamento_id, categoria_equipamento_id, nome, descricao, esta_ativo)
+SELECT
+    ((n-1) % 8) + 1,
+    ((n-1) % 10) + 1,
+    'Modelo ' || n,
+    'Modelo padrão utilizado nas unidades da instituição.',
+    TRUE
+FROM generate_series(1,20) AS n;
+
+-- ===================================================
+-- 14) equipamento (80)
+-- ===================================================
+INSERT INTO equipamento (usuario_id, modelo_equipamento_id, local_endereco_id, codigo, esta_ativo)
+SELECT
+    ((n-1) % 60) + 1,
+    ((n-1) % 20) + 1,
+    ((n-1) % 40) + 1,
+    'EQP-' || LPAD(n::text, 5, '0'),
+    (n % 6) <> 0
+FROM generate_series(1,80) AS n;
+
+-- ===================================================
+-- 15) problema (60)
+--     status: n%4 IN (0,1) -> Aprovado(1) [30]; n%4=2 -> Pendente(0) [15]; n%4=3 -> Reprovado(2) [15]
+-- ===================================================
+INSERT INTO problema (usuario_id, categoria_equipamento_id, local_endereco_id, titulo, descricao_problema, descricao_local, motivo_recusa, status)
+SELECT
+    40 + ((n-1) % 20) + 1,
+    ((n-1) % 10) + 1,
+    ((n-1) % 40) + 1,
+    'Problema reportado ' || n,
+    'Descrição detalhada do problema identificado pelo solicitante.',
+    'Local onde o problema foi identificado.',
+    CASE WHEN (n % 4) = 3 THEN 'Problema já solucionado anteriormente ou fora do escopo de atendimento.' ELSE NULL END,
+    CASE
+        WHEN (n % 4) IN (0,1) THEN 1
+        WHEN (n % 4) = 2      THEN 0
+        ELSE                       2
+    END
+FROM generate_series(1,60) AS n;
+
+-- ===================================================
+-- 16) ocorrencia (40)
+-- ===================================================
+INSERT INTO ocorrencia (usuario_id, local_endereco_id, equipamento_id, categoria_problema, titulo, descricao_ocorrencia, descricao_local, prioridade, esta_ativo)
+SELECT
+    16 + ((n-1) % 25),
+    ((n-1) % 40) + 1,
+    ((n-1) % 80) + 1,
+    ((n-1) % 10) + 1,
+    'Ocorrência resolvida ' || n,
+    'Ocorrência identificada e solucionada diretamente pelo técnico responsável.',
+    'Local do equipamento conforme cadastro.',
+    (n % 3),
+    TRUE
+FROM generate_series(1,40) AS n;
+
+-- ===================================================
+-- 17) status_ordem_servico (5)
+-- ===================================================
 INSERT INTO status_ordem_servico (nome, descricao) VALUES
-('Aberta', 'Ordem de serviço registrada e aguardando triagem'),
-('Em Análise', 'Ordem de serviço em análise técnica'),
-('Em Execução', 'Ordem de serviço sendo executada pela equipe técnica'),
-('Aguardando Peça', 'Ordem de serviço pausada aguardando peça ou material'),
-('Concluída', 'Ordem de serviço finalizada com sucesso'),
-('Cancelada', 'Ordem de serviço cancelada');
+('Aberta',            'Ordem de serviço registrada e aguardando triagem.'),
+('Em Andamento',      'Ordem de serviço em execução por um técnico responsável.'),
+('Aguardando Peça',   'Execução pausada aguardando peça ou material.'),
+('Concluída',         'Ordem de serviço finalizada com sucesso.'),
+('Cancelada',         'Ordem de serviço cancelada antes da conclusão.');
 
--- ordem_servico (40)
-INSERT INTO ordem_servico (problema_id, usuario_id, status_ordem_servico_id, categoria_problema, data_prevista, data_criacao)
+-- ===================================================
+-- 18) ordem_servico (30) — SOMENTE problemas com status = 1 (Aprovado), 1:1 estrito
+-- ===================================================
+INSERT INTO ordem_servico (problema_id, usuario_id, status_ordem_servico_id, categoria_problema, data_prevista, prioridade)
 SELECT
-    gs,
-    floor(random()*60+1)::int,
-    floor(random()*6+1)::int,
-    floor(random()*10+1)::int,
-    NOW() + (floor(random()*30) || ' days')::interval,
-    NOW() - (random()*250 || ' days')::interval
-FROM generate_series(1,40) gs;
+    p.id,
+    16 + ((rn-1) % 25),
+    ((rn-1) % 5) + 1,
+    ((rn-1) % 10) + 1,
+    NOW() + ((rn * 3) || ' days')::interval,
+    (rn % 3)
+FROM (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+    FROM problema
+    WHERE status = 1
+) AS p;
 
--- ordem_servico_status_historico (60)
+-- ===================================================
+-- 19) ordem_servico_status_historico (45) — ~1.5 por OS
+-- ===================================================
 INSERT INTO ordem_servico_status_historico (ordem_servico_id, status_ordem_servico_id, data_atualizacao)
 SELECT
-    floor(random()*40+1)::int,
-    floor(random()*6+1)::int,
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,60) gs;
+    ((n-1) % 30) + 1,
+    ((n-1) % 5) + 1,
+    NOW() - ((n * 4) || ' hours')::interval
+FROM generate_series(1,45) AS n;
 
--- tarefa (50)
-INSERT INTO tarefa (ordem_servico_id, status_ordem_servico_id, titulo, descricao, data_criacao)
+-- ===================================================
+-- 20) tarefa (80) — distribuídas entre as 30 OS
+-- ===================================================
+INSERT INTO tarefa (ordem_servico_id, status_ordem_servico_id, titulo, descricao)
 SELECT
-    floor(random()*40+1)::int,
-    floor(random()*6+1)::int,
-    'Tarefa ' || gs,
-    'Descrição da tarefa número ' || gs || ' vinculada à ordem de serviço',
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,50) gs;
+    ((n-1) % 30) + 1,
+    ((n-1) % 5) + 1,
+    'Tarefa ' || n,
+    'Etapa de execução vinculada à ordem de serviço correspondente.'
+FROM generate_series(1,80) AS n;
 
--- tarefa_status_historico (70)
+-- ===================================================
+-- 21) tarefa_status_historico (100)
+-- ===================================================
 INSERT INTO tarefa_status_historico (tarefa_id, status_ordem_servico_id, data_atualizacao)
 SELECT
-    floor(random()*50+1)::int,
-    floor(random()*6+1)::int,
-    NOW() - (random()*180 || ' days')::interval
-FROM generate_series(1,70) gs;
+    ((n-1) % 80) + 1,
+    ((n-1) % 5) + 1,
+    NOW() - ((n * 3) || ' hours')::interval
+FROM generate_series(1,100) AS n;
 
 -- ===================================================
--- FOTOS (arco exclusivo)
+-- 22) observacao_conclusao (15) — subconjunto de OS concluídas
 -- ===================================================
-
--- fotos de perfil de usuário (40)
-INSERT INTO foto (usuario_id, url, esta_ativo, data_criacao)
+INSERT INTO observacao_conclusao (ordem_servico_id, observacao)
 SELECT
-    floor(random()*60+1)::int,
-    'https://cdn.sistema.com/perfil/usuario_' || gs || '.jpg',
-    true,
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,40) gs;
+    n,
+    'Serviço concluído conforme solicitado, sem pendências adicionais.'
+FROM generate_series(1,15) AS n;
 
--- fotos de problema (30)
-INSERT INTO foto (problema_id, url, esta_ativo, data_criacao)
-SELECT
-    floor(random()*40+1)::int,
-    'https://cdn.sistema.com/problemas/foto_' || gs || '.jpg',
-    true,
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,30) gs;
+-- ===================================================
+-- 23) foto (50) — arco exclusivo: 10 registros por tipo de FK
+-- ===================================================
+INSERT INTO foto (problema_id, ocorrencia_id, ordem_servico_id, observacao_conclusao_id, usuario_id, url, esta_ativo)
+SELECT ((n-1) % 60) + 1, NULL::integer, NULL::integer, NULL::integer, NULL::integer,
+       'https://storage.plataforma.com/fotos/problema_' || n || '.jpg', TRUE
+FROM generate_series(1,10) AS n
+UNION ALL
+SELECT NULL::integer, ((n-1) % 40) + 1, NULL::integer, NULL::integer, NULL::integer,
+       'https://storage.plataforma.com/fotos/ocorrencia_' || n || '.jpg', TRUE
+FROM generate_series(1,10) AS n
+UNION ALL
+SELECT NULL::integer, NULL::integer, ((n-1) % 30) + 1, NULL::integer, NULL::integer,
+       'https://storage.plataforma.com/fotos/os_' || n || '.jpg', TRUE
+FROM generate_series(1,10) AS n
+UNION ALL
+SELECT NULL::integer, NULL::integer, NULL::integer, ((n-1) % 15) + 1, NULL::integer,
+       'https://storage.plataforma.com/fotos/conclusao_' || n || '.jpg', TRUE
+FROM generate_series(1,10) AS n
+UNION ALL
+SELECT NULL::integer, NULL::integer, NULL::integer, NULL::integer, ((n-1) % 60) + 1,
+       'https://storage.plataforma.com/fotos/usuario_' || n || '.jpg', TRUE
+FROM generate_series(1,10) AS n;
 
--- fotos de ocorrência (30)
-INSERT INTO foto (ocorrencia_id, url, esta_ativo, data_criacao)
+-- ===================================================
+-- 24) turno (20) — 2 por endereço (1 diurno + 1 noturno cruzando meia-noite)
+-- ===================================================
+INSERT INTO turno (endereco_id, nome, hora_inicio, hora_fim, atravessa_meia_noite, esta_ativo)
 SELECT
-    floor(random()*40+1)::int,
-    'https://cdn.sistema.com/ocorrencias/foto_' || gs || '.jpg',
-    true,
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,30) gs;
+    ((n-1)/2)+1,
+    CASE WHEN n % 2 = 1 THEN 'Turno Diurno' ELSE 'Turno Noturno' END,
+    CASE WHEN n % 2 = 1 THEN 21600 ELSE 72000 END,  -- 06:00 ou 20:00
+    CASE WHEN n % 2 = 1 THEN 61200 ELSE 21600 END,  -- 17:00 ou 06:00 (dia seguinte)
+    CASE WHEN n % 2 = 1 THEN FALSE ELSE TRUE END,
+    TRUE
+FROM generate_series(1,20) AS n;
 
--- fotos de ordem de serviço (25)
-INSERT INTO foto (ordem_servico_id, url, esta_ativo, data_criacao)
-SELECT
-    floor(random()*40+1)::int,
-    'https://cdn.sistema.com/ordens/foto_' || gs || '.jpg',
-    true,
-    NOW() - (random()*200 || ' days')::interval
-FROM generate_series(1,25) gs;
+-- ===================================================
+-- 25) turno_usuario (40) — pares únicos (turno_id, usuario_id)
+-- ===================================================
+INSERT INTO turno_usuario (turno_id, usuario_id, esta_ativo)
+SELECT ((n-1) % 20) + 1, 16 + ((n-1) % 20), TRUE
+FROM generate_series(1,20) AS n
+UNION ALL
+SELECT ((n-1) % 20) + 1, 41 + ((n-1) % 20), TRUE
+FROM generate_series(1,20) AS n;
 
 COMMIT;
+
+-- ===================================================
+-- VALIDAÇÃO RÁPIDA (opcional) — conferir volumetria
+-- ===================================================
+-- SELECT 'super_admin', COUNT(*) FROM super_admin
+-- UNION ALL SELECT 'instituicao', COUNT(*) FROM instituicao
+-- UNION ALL SELECT 'endereco', COUNT(*) FROM endereco
+-- UNION ALL SELECT 'plano', COUNT(*) FROM plano
+-- UNION ALL SELECT 'contrato', COUNT(*) FROM contrato
+-- UNION ALL SELECT 'pagamento', COUNT(*) FROM pagamento
+-- UNION ALL SELECT 'usuario', COUNT(*) FROM usuario
+-- UNION ALL SELECT 'aptidao', COUNT(*) FROM aptidao
+-- UNION ALL SELECT 'local_endereco', COUNT(*) FROM local_endereco
+-- UNION ALL SELECT 'evento', COUNT(*) FROM evento
+-- UNION ALL SELECT 'categoria_equipamento', COUNT(*) FROM categoria_equipamento
+-- UNION ALL SELECT 'marca_equipamento', COUNT(*) FROM marca_equipamento
+-- UNION ALL SELECT 'modelo_equipamento', COUNT(*) FROM modelo_equipamento
+-- UNION ALL SELECT 'equipamento', COUNT(*) FROM equipamento
+-- UNION ALL SELECT 'problema', COUNT(*) FROM problema
+-- UNION ALL SELECT 'ocorrencia', COUNT(*) FROM ocorrencia
+-- UNION ALL SELECT 'status_ordem_servico', COUNT(*) FROM status_ordem_servico
+-- UNION ALL SELECT 'ordem_servico', COUNT(*) FROM ordem_servico
+-- UNION ALL SELECT 'ordem_servico_status_historico', COUNT(*) FROM ordem_servico_status_historico
+-- UNION ALL SELECT 'tarefa', COUNT(*) FROM tarefa
+-- UNION ALL SELECT 'tarefa_status_historico', COUNT(*) FROM tarefa_status_historico
+-- UNION ALL SELECT 'observacao_conclusao', COUNT(*) FROM observacao_conclusao
+-- UNION ALL SELECT 'foto', COUNT(*) FROM foto
+-- UNION ALL SELECT 'turno', COUNT(*) FROM turno
+-- UNION ALL SELECT 'turno_usuario', COUNT(*) FROM turno_usuario;
