@@ -21,9 +21,9 @@ Use obrigatoriamente os seguintes códigos de enum, conforme implementados na AP
   3 = Cancelado
 
 - pagamento.status:
-  1 = Finalizado
-  2 = Pendente
-  3 = Cancelado
+  1 = Pendente
+  2 = Aprovado
+  3 = Rejeitado
 
 - pagamento.metodo_pagamento:
   1 = Crédito

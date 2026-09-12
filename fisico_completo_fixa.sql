@@ -114,7 +114,7 @@ CREATE TABLE contrato(
     endereco_id  INTEGER NOT NULL REFERENCES endereco(id),
     data_inicio  DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim     DATE NOT NULL,
-    status       INTEGER NOT NULL DEFAULT 0, -- 0 = Ativo, 1 = Inativo, 2 = Cancelado
+    status       INTEGER NOT NULL DEFAULT 0, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
