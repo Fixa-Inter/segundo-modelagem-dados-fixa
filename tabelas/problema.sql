@@ -21,7 +21,7 @@ CREATE TABLE problema(
     descricao_local          VARCHAR(255) NOT NULL,
     motivo_recusa            VARCHAR(255),
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    status                   INTEGER NOT NULL DEFAULT 0 -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
+    status                   INTEGER NOT NULL DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
 
     CONSTRAINT ck_motivo_recusa_status_recusado
         CHECK (
