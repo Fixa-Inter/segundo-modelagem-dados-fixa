@@ -46,7 +46,7 @@ CREATE TABLE super_admin(
     id         SERIAL PRIMARY KEY,
     nome       VARCHAR(100) NOT NULL,
     email      VARCHAR(100) NOT NULL UNIQUE,
-    senha      VARCHAR(255) NOT NULL,
+    senha_hash      VARCHAR(255) NOT NULL,
     esta_ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -56,13 +56,13 @@ CREATE TABLE super_admin(
 -- Dependências: -
 
 CREATE TABLE instituicao(
-    id                SERIAL PRIMARY KEY,
-    nome              VARCHAR(100) NOT NULL,
-    cnpj              VARCHAR(20) NOT NULL UNIQUE,
-    tipo_instituicao  INTEGER NOT NULL,
-    dominio_email     VARCHAR(100) NOT NULL UNIQUE,
-    data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
-    esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE
+    id               SERIAL PRIMARY KEY,
+    nome             VARCHAR(100) NOT NULL,
+    cnpj             CHAR(14) NOT NULL UNIQUE,
+    tipo_instituicao INTEGER NOT NULL,
+    dominio_email    VARCHAR(100) NOT NULL UNIQUE,
+    data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
+    esta_ativo       BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 
@@ -78,9 +78,8 @@ CREATE TABLE endereco(
     complemento    VARCHAR(100),
     bairro         VARCHAR(100) NOT NULL,
     cidade         VARCHAR(100) NOT NULL,
-    estado         VARCHAR(2) NOT NULL,
-    pais           VARCHAR(100) NOT NULL,
-    cep            VARCHAR(10) NOT NULL,
+    estado         CHAR(2) NOT NULL,
+    cep            CHAR(8) NOT NULL,
     data_criacao   TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo     BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -98,7 +97,7 @@ CREATE TABLE plano(
     id            SERIAL PRIMARY KEY,
     nome          VARCHAR(100) NOT NULL,
     valor         DECIMAL(10,2) NOT NULL,
-    descricao     VARCHAR(255) NOT NULL,
+    descricao     VARCHAR(255),
     duracao_meses INTEGER NOT NULL,
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
@@ -113,9 +112,9 @@ CREATE TABLE contrato(
     id           SERIAL PRIMARY KEY,
     plano_id     INTEGER NOT NULL REFERENCES plano(id),
     endereco_id  INTEGER NOT NULL REFERENCES endereco(id),
-    data_inicio  DATE NOT NULL,
+    data_inicio  DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim     DATE NOT NULL,
-    status       INTEGER NOT NULL DEFAULT 0, -- 0 = Ativo, 1 = Inativo, 2 = Cancelado
+    status       INTEGER NOT NULL DEFAULT 0, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -127,7 +126,7 @@ CREATE TABLE contrato(
 CREATE TABLE pagamento(
     id               SERIAL PRIMARY KEY,
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id),
-    data_pagamento   DATE NOT NULL,
+    data_pagamento   TIMESTAMP NOT NULL,
     valor_pago       DECIMAL(10,2) NOT NULL,
     status           INTEGER DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Rejeitado
     metodo_pagamento INTEGER NOT NULL,
@@ -146,10 +145,12 @@ CREATE TABLE pagamento(
 CREATE TABLE usuario(
     id              SERIAL PRIMARY KEY,
     gerente_id      INTEGER REFERENCES usuario(id),
+    endereco_id     INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo   VARCHAR(100) NOT NULL,
     email           VARCHAR(100) NOT NULL UNIQUE,
     tipo_acesso     INTEGER NOT NULL,
     senha_hash      VARCHAR(255) NOT NULL,
+    cargo           VARCHAR(100) NOT NULL,
     data_nascimento DATE NOT NULL,
     data_criacao    TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -287,8 +288,16 @@ CREATE TABLE problema(
     titulo                   VARCHAR(100) NOT NULL,
     descricao_problema       VARCHAR(255) NOT NULL,
     descricao_local          VARCHAR(255) NOT NULL,
+    motivo_recusa            VARCHAR(255),
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    status                   INTEGER NOT NULL DEFAULT 0 -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
+    status                   INTEGER NOT NULL DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
+
+    CONSTRAINT ck_motivo_recusa_status_recusado
+        CHECK (
+            (status = 2 AND motivo_recusa IS NOT NULL)
+            OR
+            (status <> 2 AND motivo_recusa IS NULL)
+        )
 );
 
 
