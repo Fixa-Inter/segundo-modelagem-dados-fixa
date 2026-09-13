@@ -56,13 +56,13 @@ CREATE TABLE super_admin(
 -- Dependências: -
 
 CREATE TABLE instituicao(
-    id               SERIAL PRIMARY KEY,
-    nome             VARCHAR(100) NOT NULL,
-    cnpj             CHAR(14) NOT NULL UNIQUE,
-    tipo_instituicao INTEGER NOT NULL,
-    dominio_email    VARCHAR(100) NOT NULL UNIQUE,
-    data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
-    esta_ativo       BOOLEAN NOT NULL DEFAULT TRUE
+    id                SERIAL PRIMARY KEY,
+    nome              VARCHAR(100) NOT NULL,
+    tipo_instituicao  INTEGER NOT NULL,
+    email_corporativo VARCHAR(100) NOT NULL UNIQUE,
+    dominio_email     VARCHAR(100) NOT NULL UNIQUE,
+    data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
+    esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 
@@ -73,6 +73,7 @@ CREATE TABLE instituicao(
 CREATE TABLE endereco(
     id             SERIAL PRIMARY KEY,
     instituicao_id INTEGER NOT NULL REFERENCES instituicao(id),
+    cnpj           CHAR(14) NOT NULL,
     logradouro     VARCHAR(100) NOT NULL,
     numero         VARCHAR(10) NOT NULL,
     complemento    VARCHAR(100),
