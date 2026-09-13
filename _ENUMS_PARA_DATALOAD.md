@@ -1,14 +1,8 @@
-# Mapeamento dos campos ENUM para o prompt do dataload
+# Mapeamento dos campos ENUM
 
-Este documento mapeia os 12 campos `INTEGER` informados para os enums
-encontrados nas duas APIs. Onde não existe enum no código, nenhum valor é
-definido por suposição.
-
-## Trecho pronto para o prompt
+Este documento mapeia os 12 campos `INTEGER` informados para os enums.
 
 ```text
-Use obrigatoriamente os seguintes códigos de enum, conforme implementados na API:
-
 - instituicao.tipo_instituicao:
   1 = Escola
   2 = Faculdade
@@ -67,7 +61,6 @@ Use obrigatoriamente os seguintes códigos de enum, conforme implementados na AP
 - ordem_servico.prioridade:
   Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
 
-Não use outros códigos ou descrições para os campos mapeados.
 ```
 
 ## Resumo do mapeamento
@@ -86,13 +79,3 @@ Não use outros códigos ou descrições para os campos mapeados.
 | `ocorrencia.prioridade` | — | Sem enum; `CHECK` aceita 0 a 2. |
 | `ordem_servico.categoria_problema` | `CategoriaProblema` | Mapeado. |
 | `ordem_servico.prioridade` | — | Sem enum; `CHECK` aceita 0 a 2. |
-
-## Origem da varredura
-
-- `segundo-api-app`: `TipoAcesso`.
-- `segundo-api-fixa`: `TipoAcesso`, `TipoInstituicao`, `StatusProblema`,
-  `TipoLocalEndereco` e `CategoriaProblema`.
-
-`TipoAcesso` aparece nas duas APIs com os mesmos valores. Não foram encontrados
-enums para `contrato.status`, `pagamento.status`, `pagamento.metodo_pagamento`
-ou as prioridades.
