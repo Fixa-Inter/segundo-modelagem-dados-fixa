@@ -101,7 +101,10 @@ CREATE TABLE plano(
     descricao     VARCHAR(255),
     duracao_meses INTEGER NOT NULL,
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
-    esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
+    esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT ck_duracao_meses_positiva
+        CHECK (duracao_meses > 0)
 );
 
 
@@ -116,7 +119,10 @@ CREATE TABLE contrato(
     data_inicio  DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim     DATE NOT NULL,
     status       INTEGER NOT NULL DEFAULT 0, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
-    data_criacao TIMESTAMP NOT NULL DEFAULT NOW()
+    data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_data_fim_maior_ou_igual_data_inicio
+        CHECK (data_fim > data_inicio)
 );
 
 
@@ -143,9 +149,9 @@ CREATE TABLE pagamento(
 -- Descrição: Armazena os usuários e suas informações de acesso.
 -- Dependências: usuario (auto-relacionamento)
 
-CREATE TABLE usuario(
+CREATE TABLE usuario (
     id              SERIAL PRIMARY KEY,
-    gerente_id      INTEGER REFERENCES usuario(id),
+    gerente_id      INTEGER,
     endereco_id     INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo   VARCHAR(100) NOT NULL,
     email           VARCHAR(100) NOT NULL UNIQUE,
@@ -158,7 +164,14 @@ CREATE TABLE usuario(
     primeiro_acesso BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT ck_usuario_nao_e_proprio_gerente
-        CHECK (gerente_id <> id)
+        CHECK (gerente_id <> id),
+
+    CONSTRAINT uk_usuario_id_endereco
+        UNIQUE (id, endereco_id),
+
+    CONSTRAINT fk_usuario_gerente_mesmo_endereco
+        FOREIGN KEY (gerente_id, endereco_id)
+        REFERENCES usuario(id, endereco_id)
 );
 
 

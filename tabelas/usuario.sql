@@ -9,9 +9,9 @@
  * - usuario (auto-relacionamento)
  */
 
-CREATE TABLE usuario(
+CREATE TABLE usuario (
     id              SERIAL PRIMARY KEY,
-    gerente_id      INTEGER REFERENCES usuario(id),
+    gerente_id      INTEGER,
     endereco_id     INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo   VARCHAR(100) NOT NULL,
     email           VARCHAR(100) NOT NULL UNIQUE,
@@ -24,5 +24,12 @@ CREATE TABLE usuario(
     primeiro_acesso BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT ck_usuario_nao_e_proprio_gerente
-        CHECK (gerente_id <> id)
+        CHECK (gerente_id <> id),
+
+    CONSTRAINT uk_usuario_id_endereco
+        UNIQUE (id, endereco_id),
+
+    CONSTRAINT fk_usuario_gerente_mesmo_endereco
+        FOREIGN KEY (gerente_id, endereco_id)
+        REFERENCES usuario(id, endereco_id)
 );

@@ -16,6 +16,9 @@ CREATE TABLE contrato(
     endereco_id  INTEGER NOT NULL REFERENCES endereco(id),
     data_inicio  DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim     DATE NOT NULL,
-    status       INTEGER NOT NULL DEFAULT 0, -- 0 = Ativo, 1 = Inativo, 2 = Cancelado
-    data_criacao TIMESTAMP NOT NULL DEFAULT NOW()
+    status       INTEGER NOT NULL DEFAULT 0, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
+    data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_data_fim_maior_ou_igual_data_inicio
+        CHECK (data_fim > data_inicio)
 );
