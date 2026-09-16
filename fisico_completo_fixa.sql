@@ -59,7 +59,7 @@ CREATE TABLE instituicao(
     id                SERIAL PRIMARY KEY,
     nome              VARCHAR(100) NOT NULL,
     tipo_instituicao  INTEGER NOT NULL,
-    email_corporativo VARCHAR(100) NOT NULL UNIQUE,
+    email_corporativo VARCHAR(100) UNIQUE,
     dominio_email     VARCHAR(100) NOT NULL UNIQUE,
     data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE
@@ -73,7 +73,7 @@ CREATE TABLE instituicao(
 CREATE TABLE endereco(
     id             SERIAL PRIMARY KEY,
     instituicao_id INTEGER NOT NULL REFERENCES instituicao(id),
-    cnpj           CHAR(14) NOT NULL,
+    cnpj           CHAR(14) NOT NULL UNIQUE,
     logradouro     VARCHAR(100) NOT NULL,
     numero         VARCHAR(10) NOT NULL,
     complemento    VARCHAR(100),
@@ -158,13 +158,9 @@ CREATE TABLE usuario (
     senha_hash         VARCHAR(255) NOT NULL,
     cargo              VARCHAR(100) NOT NULL,
     data_nascimento    DATE NOT NULL,
-    data_ultimo_acesso TIMESTAMP,
     data_criacao       TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo         BOOLEAN NOT NULL DEFAULT FALSE,
     primeiro_acesso    BOOLEAN NOT NULL DEFAULT TRUE,
-
-    CONSTRAINT ck_usuario_nao_e_proprio_gerente
-        CHECK (gerente_id <> id),
 
     CONSTRAINT uk_usuario_id_endereco
         UNIQUE (id, endereco_id)

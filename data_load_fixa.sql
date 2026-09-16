@@ -1,5 +1,5 @@
 -- ===================================================
--- SCRIPT DE MASSA DE DADOS (SEED)
+-- SCRIPT DE MASSA DE DADOS (SEED) - v3
 -- Requisito: carga inicial de pelo menos 500 registros
 -- verossímeis para testes de volume.
 -- ---------------------------------------------------
@@ -8,11 +8,10 @@
 -- OBS 1: Execução sequencial pós-DDL em banco limpo,
 --        considerando IDs SERIAL iniciando em 1 sem
 --        lacunas (nenhum INSERT/DELETE anterior).
--- OBS 2: Mapeamento de enums/códigos inteiros (fonte:
---        tabela de enums mais recente fornecida):
+-- OBS 2: Mapeamento de enums/códigos inteiros:
 --        • instituicao.tipo_instituicao        -> 1=Escola, 2=Faculdade, 3=Empresa, 4=Órgão Público
 --        • contrato.status                     -> 1=Ativo, 2=Inativo, 3=Cancelado
---        • pagamento.status                    -> 1=Finalizado, 2=Pendente, 3=Cancelado
+--        • pagamento.status                    -> 1=Pendente, 2=Aprovado, 3=Rejeitado
 --        • pagamento.metodo_pagamento          -> 1=Crédito, 2=Débito, 3=Pix
 --        • usuario.tipo_acesso                 -> 1=Administrador, 2=Gestor, 3=Técnico, 4=Solicitante
 --        • categoria_problema (aptidao/ocorrencia/ordem_servico)
@@ -30,7 +29,12 @@
 --        status = 1 (Aprovado) geram ordem de serviço.
 -- OBS 6: `problema.motivo_recusa` preenchido única e exclusivamente quando status = 2 (Reprovado),
 --        respeitando `ck_motivo_recusa_status_recusado`.
--- OBS 7: Integridade referencial garantida via ranges de ID fixos e conhecidos (ver contagens
+-- OBS 7: Modelo v3 NÃO possui hierarquia entre usuários (coluna `gerente_id` foi removida do
+--        schema); todos os 60 usuários são gerados sem gestor vinculado.
+-- OBS 8: `endereco.cnpj` é único por endereço/franquia (10 CNPJs distintos). `instituicao` não
+--        possui mais coluna `cnpj` (migrada para `endereco`), mas ganhou `email_corporativo`
+--        (nullable, UNIQUE quando preenchido) e manteve `tipo_instituicao`/`dominio_email`.
+-- OBS 9: Integridade referencial garantida via ranges de ID fixos e conhecidos (ver contagens
 --        por tabela nos comentários de cada bloco).
 -- ===================================================
 
@@ -47,21 +51,22 @@ INSERT INTO super_admin (nome, email, senha_hash, esta_ativo) VALUES
 -- ===================================================
 -- 2) instituicao (5)
 -- ===================================================
-INSERT INTO instituicao (nome, cnpj, tipo_instituicao, dominio_email, esta_ativo)
+INSERT INTO instituicao (nome, tipo_instituicao, email_corporativo, dominio_email, esta_ativo)
 SELECT
     (ARRAY['Colégio Horizonte','Faculdade Vértice','Indústrias Aurora','Secretaria Municipal de Obras','Instituto Educacional Nova Era'])[n],
-    LPAD((10000000000000 + n * 137)::text, 14, '0'),
     (ARRAY[1,2,3,4,1])[n],
+    (ARRAY['contato@colegiohorizonte.edu.br','contato@faculdadevertice.edu.br','contato@industriasaurora.com.br','contato@sec-obras.gov.br','contato@institutonovaera.edu.br'])[n],
     (ARRAY['colegiohorizonte.edu.br','faculdadevertice.edu.br','industriasaurora.com.br','sec-obras.gov.br','institutonovaera.edu.br'])[n],
     TRUE
 FROM generate_series(1,5) AS n;
 
 -- ===================================================
--- 3) endereco (10) — 2 por instituição
+-- 3) endereco (10) — 2 por instituição, cnpj único por endereço
 -- ===================================================
-INSERT INTO endereco (instituicao_id, logradouro, numero, complemento, bairro, cidade, estado, cep, esta_ativo)
+INSERT INTO endereco (instituicao_id, cnpj, logradouro, numero, complemento, bairro, cidade, estado, cep, esta_ativo)
 SELECT
     ((n-1)/2)+1,
+    LPAD((10000000000000 + n * 137)::text, 14, '0'),
     (ARRAY['Rua das Acácias','Av. Paulista','Rua Sete de Setembro','Rua dos Andradas','Av. Brasil','Rua XV de Novembro','Rua Marechal Deodoro','Av. Ipiranga','Rua Barão do Rio Branco','Rua Voluntários da Pátria'])[n],
     (100 + n * 10)::text,
     CASE WHEN n % 3 = 0 THEN 'Bloco ' || n ELSE NULL END,
@@ -82,7 +87,7 @@ INSERT INTO plano (nome, valor, descricao, duracao_meses, esta_ativo) VALUES
 ('Plano Corporativo', 2999.90, 'Atendimento dedicado para múltiplas unidades.',  36, TRUE);
 
 -- ===================================================
--- 5) contrato (10) — 1 por endereço
+-- 5) contrato (10) — 1 por endereço; status 1/2/3 (Ativo/Inativo/Cancelado)
 -- ===================================================
 INSERT INTO contrato (plano_id, endereco_id, data_inicio, data_fim, status)
 SELECT
@@ -94,7 +99,7 @@ SELECT
 FROM generate_series(1,10) AS n;
 
 -- ===================================================
--- 6) pagamento (20) — 2 por contrato
+-- 6) pagamento (20) — 2 por contrato; status 1/2/3 (Finalizado/Pendente/Cancelado)
 -- ===================================================
 INSERT INTO pagamento (contrato_id, data_pagamento, valor_pago, status, metodo_pagamento)
 SELECT
@@ -106,20 +111,14 @@ SELECT
 FROM generate_series(1,20) AS n;
 
 -- ===================================================
--- 7) usuario (60)
---    1-5   Administradores (gerente_id NULL)
---    6-15  Gestores        (gerente_id = administrador)
---    16-40 Técnicos        (gerente_id = gestor)
---    41-60 Solicitantes    (gerente_id = gestor)
+-- 7) usuario (60) — SEM hierarquia (gerente_id não existe no schema v3)
+--    1-5   Administradores
+--    6-15  Gestores
+--    16-40 Técnicos
+--    41-60 Solicitantes
 -- ===================================================
-INSERT INTO usuario (gerente_id, endereco_id, nome_completo, email, tipo_acesso, senha_hash, cargo, data_nascimento, esta_ativo, primeiro_acesso)
+INSERT INTO usuario (endereco_id, nome_completo, email, tipo_acesso, senha_hash, cargo, data_nascimento, esta_ativo, primeiro_acesso)
 SELECT
-    CASE
-        WHEN n <= 5  THEN NULL
-        WHEN n <= 15 THEN ((n-6) % 5) + 1
-        WHEN n <= 40 THEN 6 + ((n-16) % 10)
-        ELSE               6 + ((n-41) % 10)
-    END AS gerente_id,
     ((n-1) % 10) + 1 AS endereco_id,
     (ARRAY['Ana','Bruno','Carla','Diego','Elaine','Fábio','Gabriela','Heitor','Iris','João',
            'Karina','Leandro','Marina','Nelson','Otávia','Paulo','Queila','Rodrigo','Sabrina','Tiago'])[((n-1) % 20)+1]
@@ -398,32 +397,3 @@ SELECT ((n-1) % 20) + 1, 41 + ((n-1) % 20), TRUE
 FROM generate_series(1,20) AS n;
 
 COMMIT;
-
--- ===================================================
--- VALIDAÇÃO RÁPIDA (opcional) — conferir volumetria
--- ===================================================
--- SELECT 'super_admin', COUNT(*) FROM super_admin
--- UNION ALL SELECT 'instituicao', COUNT(*) FROM instituicao
--- UNION ALL SELECT 'endereco', COUNT(*) FROM endereco
--- UNION ALL SELECT 'plano', COUNT(*) FROM plano
--- UNION ALL SELECT 'contrato', COUNT(*) FROM contrato
--- UNION ALL SELECT 'pagamento', COUNT(*) FROM pagamento
--- UNION ALL SELECT 'usuario', COUNT(*) FROM usuario
--- UNION ALL SELECT 'aptidao', COUNT(*) FROM aptidao
--- UNION ALL SELECT 'local_endereco', COUNT(*) FROM local_endereco
--- UNION ALL SELECT 'evento', COUNT(*) FROM evento
--- UNION ALL SELECT 'categoria_equipamento', COUNT(*) FROM categoria_equipamento
--- UNION ALL SELECT 'marca_equipamento', COUNT(*) FROM marca_equipamento
--- UNION ALL SELECT 'modelo_equipamento', COUNT(*) FROM modelo_equipamento
--- UNION ALL SELECT 'equipamento', COUNT(*) FROM equipamento
--- UNION ALL SELECT 'problema', COUNT(*) FROM problema
--- UNION ALL SELECT 'ocorrencia', COUNT(*) FROM ocorrencia
--- UNION ALL SELECT 'status_ordem_servico', COUNT(*) FROM status_ordem_servico
--- UNION ALL SELECT 'ordem_servico', COUNT(*) FROM ordem_servico
--- UNION ALL SELECT 'ordem_servico_status_historico', COUNT(*) FROM ordem_servico_status_historico
--- UNION ALL SELECT 'tarefa', COUNT(*) FROM tarefa
--- UNION ALL SELECT 'tarefa_status_historico', COUNT(*) FROM tarefa_status_historico
--- UNION ALL SELECT 'observacao_conclusao', COUNT(*) FROM observacao_conclusao
--- UNION ALL SELECT 'foto', COUNT(*) FROM foto
--- UNION ALL SELECT 'turno', COUNT(*) FROM turno
--- UNION ALL SELECT 'turno_usuario', COUNT(*) FROM turno_usuario;
