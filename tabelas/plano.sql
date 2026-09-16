@@ -15,5 +15,8 @@ CREATE TABLE plano(
     descricao     VARCHAR(255),
     duracao_meses INTEGER NOT NULL,
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
-    esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
+    esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT ck_duracao_meses_positiva
+        CHECK (duracao_meses > 0)
 );
