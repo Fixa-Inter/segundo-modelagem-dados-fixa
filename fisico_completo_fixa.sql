@@ -151,7 +151,6 @@ CREATE TABLE pagamento(
 
 CREATE TABLE usuario (
     id                 SERIAL PRIMARY KEY,
-    gerente_id         INTEGER,
     endereco_id        INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo      VARCHAR(100) NOT NULL,
     email              VARCHAR(100) NOT NULL UNIQUE,
@@ -168,11 +167,7 @@ CREATE TABLE usuario (
         CHECK (gerente_id <> id),
 
     CONSTRAINT uk_usuario_id_endereco
-        UNIQUE (id, endereco_id),
-
-    CONSTRAINT fk_usuario_gerente_mesmo_endereco
-        FOREIGN KEY (gerente_id, endereco_id)
-        REFERENCES usuario(id, endereco_id)
+        UNIQUE (id, endereco_id)
 );
 
 
@@ -379,7 +374,7 @@ CREATE TABLE ordem_servico(
 
 CREATE TABLE ordem_servico_status_historico(
     id                       SERIAL PRIMARY KEY,
-    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
     status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
     data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -391,7 +386,7 @@ CREATE TABLE ordem_servico_status_historico(
 
 CREATE TABLE tarefa(
     id                       SERIAL PRIMARY KEY,
-    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
     status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
@@ -405,7 +400,7 @@ CREATE TABLE tarefa(
 
 CREATE TABLE tarefa_status_historico(
     id                       SERIAL PRIMARY KEY,
-    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id),
+    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id) ON DELETE CASCADE,
     status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
     data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -421,7 +416,7 @@ CREATE TABLE tarefa_status_historico(
 
 CREATE TABLE observacao_conclusao(
     id               SERIAL PRIMARY KEY,
-    ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id),
+    ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
     observacao       VARCHAR(255) NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -435,7 +430,7 @@ CREATE TABLE foto(
     id                       SERIAL PRIMARY KEY,
     problema_id              INTEGER REFERENCES problema(id),
     ocorrencia_id            INTEGER REFERENCES ocorrencia(id),
-    ordem_servico_id         INTEGER REFERENCES ordem_servico(id),
+    ordem_servico_id         INTEGER REFERENCES ordem_servico(id) ON DELETE CASCADE,
     observacao_conclusao_id  INTEGER REFERENCES observacao_conclusao(id),
     usuario_id               INTEGER REFERENCES usuario(id),
     url                      VARCHAR(255) NOT NULL,
