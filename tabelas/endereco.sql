@@ -11,7 +11,7 @@
 CREATE TABLE endereco(
     id             SERIAL PRIMARY KEY,
     instituicao_id INTEGER NOT NULL REFERENCES instituicao(id),
-    cnpj           CHAR(14) NOT NULL,
+    cnpj           CHAR(14) NOT NULL UNIQUE,
     logradouro     VARCHAR(100) NOT NULL,
     numero         VARCHAR(10) NOT NULL,
     complemento    VARCHAR(100),

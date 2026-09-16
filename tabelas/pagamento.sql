@@ -14,7 +14,7 @@ CREATE TABLE pagamento(
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id),
     data_pagamento   TIMESTAMP NOT NULL,
     valor_pago       DECIMAL(10,2) NOT NULL,
-    status           INTEGER DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Rejeitado
+    status           INTEGER DEFAULT 0, -- 1 = Pendente, 2 = Aprovado, 3 = Rejeitado
     metodo_pagamento INTEGER NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
 );

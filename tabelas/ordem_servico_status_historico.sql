@@ -11,8 +11,8 @@
  */
 
 CREATE TABLE ordem_servico_status_historico(
-    id                      SERIAL PRIMARY KEY,
-    ordem_servico_id        INTEGER NOT NULL REFERENCES ordem_servico(id),
-    status_ordem_servico_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_atualizacao        TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       SERIAL PRIMARY KEY,
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
