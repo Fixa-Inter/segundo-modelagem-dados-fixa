@@ -46,7 +46,7 @@ CREATE TABLE super_admin(
     id         SERIAL PRIMARY KEY,
     nome       VARCHAR(100) NOT NULL,
     email      VARCHAR(100) NOT NULL UNIQUE,
-    senha_hash      VARCHAR(255) NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
     esta_ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -413,8 +413,12 @@ CREATE TABLE tarefa_status_historico(
 CREATE TABLE observacao_conclusao(
     id               SERIAL PRIMARY KEY,
     ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    dificuldade      INTEGER NOT NULL, -- 1 = Fácil, 2 = Médio, 3 = Difícil
     observacao       VARCHAR(255) NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
+
+    CONSTRAINT ck_dificuldade_observacao
+        CHECK (dificuldade >= 1 AND dificuldade <= 3)
 );
 
 
