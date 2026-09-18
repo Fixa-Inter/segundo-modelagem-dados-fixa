@@ -142,7 +142,7 @@ CREATE TABLE pagamento(
 
 
 -- ===================================================
--- USUÁRIOS / APTIDÃO
+-- USUÁRIOS / APTIDÃO / FEEDBACK
 -- ===================================================
 
 -- TABELA: usuario
@@ -181,6 +181,17 @@ CREATE TABLE aptidao(
 
     CONSTRAINT uk_usuario_categoria_aptidao
         UNIQUE (usuario_id, categoria_problema)
+);
+
+
+-- TABELA: feedback
+-- Descrição: Registra o feedback do usuário em relação ao aplicativo. 
+CREATE TABLE feedback(
+    id                 SERIAL PRIMARY KEY,
+    usuario_id         INTEGER NOT NULL REFERENCES usuario(id),
+    comentario         VARCHAR(255),
+    ideia_central      VARCHAR(255),
+    data_criacao       TIMESTAMP NOT NULL DEFAULT NOW(),
 );
 
 
