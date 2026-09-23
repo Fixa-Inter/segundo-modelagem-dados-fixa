@@ -1,9 +1,9 @@
 -- ===================================================
--- SCRIPT DE MASSA DE DADOS (SEED) - v3
+-- SCRIPT DE MASSA DE DADOS (SEED)
 -- Requisito: carga inicial de pelo menos 500 registros
 -- verossímeis para testes de volume.
 -- ---------------------------------------------------
--- Total gerado por este script: ~835 registros
+-- Total gerado por este script: ~860 registros
 -- ---------------------------------------------------
 -- OBS 1: Execução sequencial pós-DDL em banco limpo,
 --        considerando IDs SERIAL iniciando em 1 sem
@@ -36,6 +36,11 @@
 --        (nullable, UNIQUE quando preenchido) e manteve `tipo_instituicao`/`dominio_email`.
 -- OBS 9: Integridade referencial garantida via ranges de ID fixos e conhecidos (ver contagens
 --        por tabela nos comentários de cada bloco).
+-- OBS 10: `observacao_conclusao.dificuldade` -> 1=Fácil, 2=Médio, 3=Difícil (definido no
+--         comentário do próprio DDL; sem enum correspondente nas APIs).
+-- OBS 11: Tabela `feedback` (nova nesta versão do schema) armazena comentários livres de
+--         usuários sobre o aplicativo; campos `comentario`/`ideia_central` são texto livre,
+--         sem enum associado.
 -- ===================================================
 
 BEGIN;
@@ -167,6 +172,38 @@ FROM (
         ROUND((6 + (k % 4) * 1.1)::numeric, 2) AS nota
     FROM generate_series(0,24) AS k
 ) AS aptidoes;
+
+-- ===================================================
+-- 8b) feedback (25) — comentários livres de usuários sobre o app
+-- ===================================================
+INSERT INTO feedback (usuario_id, comentario, ideia_central)
+SELECT
+    ((n-1) % 60) + 1,
+    (ARRAY[
+        'O aplicativo poderia ter notificações mais rápidas quando uma OS é aberta.',
+        'Gostei da facilidade para registrar problemas com fotos.',
+        'Seria útil ter um filtro por categoria na tela de ocorrências.',
+        'O tempo de resposta do suporte técnico melhorou muito no último mês.',
+        'Faltou um jeito de acompanhar o histórico de turnos pelo celular.',
+        'A tela de equipamentos poderia mostrar o local de forma mais clara.',
+        'Adorei a nova função de aptidão por categoria dos técnicos.',
+        'Às vezes a tela de tarefas demora para carregar.',
+        'Seria bom ter um resumo diário das ordens de serviço concluídas.',
+        'O cadastro de problema está bem intuitivo, parabéns pela equipe.'
+    ])[((n-1) % 10) + 1],
+    (ARRAY[
+        'Notificações em tempo real',
+        'Anexo de fotos',
+        'Filtros avançados',
+        'Suporte mais ágil',
+        'Histórico de turnos',
+        'Mapa de locais',
+        'Aptidão por categoria',
+        'Performance da tela de tarefas',
+        'Resumo diário',
+        'Usabilidade geral'
+    ])[((n-1) % 10) + 1]
+FROM generate_series(1,25) AS n;
 
 -- ===================================================
 -- 9) local_endereco (40) — 4 por endereço
@@ -343,9 +380,10 @@ FROM generate_series(1,100) AS n;
 -- ===================================================
 -- 22) observacao_conclusao (15) — subconjunto de OS concluídas
 -- ===================================================
-INSERT INTO observacao_conclusao (ordem_servico_id, observacao)
+INSERT INTO observacao_conclusao (ordem_servico_id, dificuldade, observacao)
 SELECT
     n,
+    ((n-1) % 3) + 1,
     'Serviço concluído conforme solicitado, sem pendências adicionais.'
 FROM generate_series(1,15) AS n;
 

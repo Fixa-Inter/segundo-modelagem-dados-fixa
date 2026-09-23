@@ -46,7 +46,7 @@ CREATE TABLE super_admin(
     id         SERIAL PRIMARY KEY,
     nome       VARCHAR(100) NOT NULL,
     email      VARCHAR(100) NOT NULL UNIQUE,
-    senha_hash      VARCHAR(255) NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
     esta_ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -118,7 +118,7 @@ CREATE TABLE contrato(
     endereco_id  INTEGER NOT NULL REFERENCES endereco(id),
     data_inicio  DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim     DATE NOT NULL,
-    status       INTEGER NOT NULL DEFAULT 0, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
+    status       INTEGER NOT NULL DEFAULT 1, --   1 = Ativo, 2 = Inativo, 3 = Cancelado
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_data_fim_maior_ou_igual_data_inicio
@@ -135,14 +135,14 @@ CREATE TABLE pagamento(
     contrato_id      INTEGER NOT NULL REFERENCES contrato(id),
     data_pagamento   TIMESTAMP NOT NULL,
     valor_pago       DECIMAL(10,2) NOT NULL,
-    status           INTEGER DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Rejeitado
+    status           INTEGER DEFAULT 1, -- 1 = Pendente, 2 = Aprovado, 3 = Rejeitado
     metodo_pagamento INTEGER NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 
 -- ===================================================
--- USUÁRIOS / APTIDÃO
+-- USUÁRIOS / APTIDÃO / FEEDBACK
 -- ===================================================
 
 -- TABELA: usuario
@@ -181,6 +181,17 @@ CREATE TABLE aptidao(
 
     CONSTRAINT uk_usuario_categoria_aptidao
         UNIQUE (usuario_id, categoria_problema)
+);
+
+
+-- TABELA: feedback
+-- Descrição: Registra o feedback do usuário em relação ao aplicativo. 
+CREATE TABLE feedback(
+    id                 SERIAL PRIMARY KEY,
+    usuario_id         INTEGER NOT NULL REFERENCES usuario(id),
+    comentario         VARCHAR(255),
+    ideia_central      VARCHAR(255),
+    data_criacao       TIMESTAMP NOT NULL DEFAULT NOW(),
 );
 
 
@@ -413,8 +424,12 @@ CREATE TABLE tarefa_status_historico(
 CREATE TABLE observacao_conclusao(
     id               SERIAL PRIMARY KEY,
     ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    dificuldade      INTEGER NOT NULL, -- 1 = Fácil, 2 = Médio, 3 = Difícil
     observacao       VARCHAR(255) NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
+
+    CONSTRAINT ck_dificuldade_observacao
+        CHECK (dificuldade >= 1 AND dificuldade <= 3)
 );
 
 

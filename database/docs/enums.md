@@ -55,6 +55,11 @@ Este documento mapeia os 12 campos `INTEGER` informados para os enums.
   1 = Aprovado
   2 = Reprovado
 
+- observacao_conclusao.dificuldade:
+  1 = Fácil
+  2 = Médio
+  3 = Difícil
+
 - ocorrencia.prioridade:
   Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
 
