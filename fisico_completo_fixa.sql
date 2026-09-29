@@ -375,15 +375,16 @@ CREATE TABLE ordem_servico(
 );
 
 
--- TABELA: ordem_servico_status_historico
--- Descrição: Mantém o histórico de status das ordens de serviço.
+-- TABELA: ordem_servico_status_auditoria
+-- Descrição: Registra as alterações de status das ordens de serviço, armazenando o valor anterior e o novo valor.
 -- Dependências: ordem_servico, status_ordem_servico
 
-CREATE TABLE ordem_servico_status_historico(
-    id                       SERIAL PRIMARY KEY,
-    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
-    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE ordem_servico_status_auditoria (
+    id SERIAL PRIMARY KEY,
+    ordem_servico_id   INTEGER NOT NULL REFERENCES ordem_servico(id),
+    status_anterior_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    status_novo_id     INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    data_alteracao     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 
@@ -393,7 +394,7 @@ CREATE TABLE ordem_servico_status_historico(
 
 CREATE TABLE tarefa(
     id                       SERIAL PRIMARY KEY,
-    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
     status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
@@ -407,7 +408,7 @@ CREATE TABLE tarefa(
 
 CREATE TABLE tarefa_status_historico(
     id                       SERIAL PRIMARY KEY,
-    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id) ON DELETE CASCADE,
+    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id),
     status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
     data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -423,10 +424,10 @@ CREATE TABLE tarefa_status_historico(
 
 CREATE TABLE observacao_conclusao(
     id               SERIAL PRIMARY KEY,
-    ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    ordem_servico_id INTEGER NOT NULL REFERENCES ordem_servico(id),
     dificuldade      INTEGER NOT NULL, -- 1 = Fácil, 2 = Médio, 3 = Difícil
     observacao       VARCHAR(255) NOT NULL,
-    data_criacao     TIMESTAMP NOT NULL DEFAULT NOW()
+    data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_dificuldade_observacao
         CHECK (dificuldade >= 1 AND dificuldade <= 3)
@@ -441,7 +442,7 @@ CREATE TABLE foto(
     id                       SERIAL PRIMARY KEY,
     problema_id              INTEGER REFERENCES problema(id),
     ocorrencia_id            INTEGER REFERENCES ocorrencia(id),
-    ordem_servico_id         INTEGER REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    ordem_servico_id         INTEGER REFERENCES ordem_servico(id),
     observacao_conclusao_id  INTEGER REFERENCES observacao_conclusao(id),
     usuario_id               INTEGER REFERENCES usuario(id),
     url                      VARCHAR(255) NOT NULL,
