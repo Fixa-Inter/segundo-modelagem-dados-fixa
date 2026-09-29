@@ -390,27 +390,14 @@ CREATE TABLE ordem_servico_status_auditoria (
 
 -- TABELA: tarefa
 -- Descrição: Registra as tarefas vinculadas às ordens de serviço.
--- Dependências: ordem_servico, status_ordem_servico
+-- Dependências: ordem_servico
 
 CREATE TABLE tarefa(
     id                       SERIAL PRIMARY KEY,
-    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id),
-    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-
--- TABELA: tarefa_status_historico
--- Descrição: Mantém o histórico de status das tarefas.
--- Dependências: tarefa, status_ordem_servico
-
-CREATE TABLE tarefa_status_historico(
-    id                       SERIAL PRIMARY KEY,
-    tarefa_id                INTEGER NOT NULL REFERENCES tarefa(id),
-    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_atualizacao         TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 
