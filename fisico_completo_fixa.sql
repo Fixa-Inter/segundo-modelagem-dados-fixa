@@ -10,9 +10,8 @@
 DROP TABLE IF EXISTS turno_usuario CASCADE;
 DROP TABLE IF EXISTS turno CASCADE;
 DROP TABLE IF EXISTS foto CASCADE;
-DROP TABLE IF EXISTS tarefa_status_historico CASCADE;
 DROP TABLE IF EXISTS tarefa CASCADE;
-DROP TABLE IF EXISTS ordem_servico_status_historico CASCADE;
+DROP TABLE IF EXISTS ordem_servico_status_auditoria CASCADE;
 DROP TABLE IF EXISTS ordem_servico CASCADE;
 DROP TABLE IF EXISTS status_ordem_servico CASCADE;
 DROP TABLE IF EXISTS ocorrencia CASCADE;
