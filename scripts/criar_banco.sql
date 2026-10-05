@@ -5,69 +5,114 @@
 \echo '=============================='
 
 
+-- ===================================================
+-- 1. TABELAS
+-- ===================================================
+
 \echo '1. Criando tabelas...'
 
+-- ADMIN / INSTITUIÇÃO
 \ir ../database/tabelas/super_admin.sql
 \ir ../database/tabelas/instituicao.sql
 \ir ../database/tabelas/endereco.sql
 
+-- PLANOS / PAGAMENTOS
 \ir ../database/tabelas/plano.sql
 \ir ../database/tabelas/contrato.sql
 \ir ../database/tabelas/pagamento.sql
 
+-- USUÁRIOS
 \ir ../database/tabelas/usuario.sql
 \ir ../database/tabelas/aptidao.sql
 \ir ../database/tabelas/feedback.sql
 
+-- LOCAIS / EVENTOS
 \ir ../database/tabelas/local_endereco.sql
 \ir ../database/tabelas/evento.sql
 
+-- EQUIPAMENTOS
 \ir ../database/tabelas/categoria_equipamento.sql
 \ir ../database/tabelas/marca_equipamento.sql
 \ir ../database/tabelas/modelo_equipamento.sql
 \ir ../database/tabelas/equipamento.sql
 
+-- PROBLEMAS / OCORRÊNCIAS
 \ir ../database/tabelas/problema.sql
 \ir ../database/tabelas/ocorrencia.sql
 
+-- ORDEM DE SERVIÇO
 \ir ../database/tabelas/status_ordem_servico.sql
 \ir ../database/tabelas/ordem_servico.sql
-\ir ../database/tabelas/ordem_servico_status_historico.sql
 
+-- AUDITORIAS DA ORDEM DE SERVIÇO
+\ir ../database/tabelas/ordem_servico_status_auditoria.sql
+\ir ../database/tabelas/ordem_servico_tecnico_auditoria.sql
+
+-- TAREFAS
 \ir ../database/tabelas/tarefa.sql
-\ir ../database/tabelas/tarefa_status_historico.sql
 
+-- CONCLUSÃO / FOTOS
 \ir ../database/tabelas/observacao_conclusao.sql
 \ir ../database/tabelas/foto.sql
 
+-- TURNOS
 \ir ../database/tabelas/turno.sql
 \ir ../database/tabelas/turno_usuario.sql
 
 
+-- ===================================================
+-- 2. FUNÇÕES
+-- ===================================================
+
 \echo '2. Criando funcoes...'
 
-\ir ../database/funcoes/criar_ordem_servico_ao_aprovar_problema.sql
+-- Funções independentes serão adicionadas aqui.
+-- As funções utilizadas pelas triggers de auditoria
+-- estão dentro dos próprios arquivos de trigger.
 
+
+-- ===================================================
+-- 3. PROCEDURES
+-- ===================================================
 
 \echo '3. Criando procedures...'
 
--- \ir
+-- \ir ../database/procedures/nome_procedure.sql
 
+
+-- ===================================================
+-- 4. TRIGGERS
+-- ===================================================
 
 \echo '4. Criando triggers...'
 
--- \ir
+\ir ../database/triggers/auditoria_status_ordem_servico.sql
+\ir ../database/triggers/auditoria_tecnico_ordem_servico.sql
 
+
+-- ===================================================
+-- 5. VIEWS
+-- ===================================================
 
 \echo '5. Criando views...'
 
--- \ir
+-- Views analíticas de BI serão adicionadas aqui.
+-- \ir ../database/views/nome_view.sql
 
+
+-- ===================================================
+-- 6. ÍNDICES
+-- ===================================================
 
 \echo '6. Criando indices...'
 
--- \ir
+-- Índices de otimização serão adicionados aqui.
+-- \ir ../database/indices/nome_indice.sql
 
+
+-- ===================================================
+-- 7. CARGA INICIAL
+-- ===================================================
 
 \echo '7. Carregando dados iniciais...'
 

@@ -148,7 +148,7 @@ CREATE TABLE pagamento(
 -- Descrição: Armazena os usuários e suas informações de acesso.
 -- Dependências: usuario (auto-relacionamento)
 
-CREATE TABLE usuario (
+CREATE TABLE usuario(
     id                 SERIAL PRIMARY KEY,
     endereco_id        INTEGER NOT NULL REFERENCES endereco(id),
     nome_completo      VARCHAR(100) NOT NULL,
@@ -319,7 +319,7 @@ CREATE TABLE problema(
 
 -- TABELA: ocorrencia
 -- Descrição: Registra ocorrências, ou seja, problemas não registrados, mas que já foram resolvidos
---            por um técnico.
+-- por um técnico.
 -- Dependências: usuario, local_endereco, equipamento
 
 CREATE TABLE ocorrencia(
@@ -490,4 +490,3 @@ CREATE TABLE turno_usuario(
     CONSTRAINT uk_turno_usuario
         UNIQUE (turno_id, usuario_id)
 );
-```
