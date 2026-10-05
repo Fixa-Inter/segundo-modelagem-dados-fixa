@@ -1,8 +1,5 @@
-# Mapeamento dos campos ENUM
+# Mapeamento dos valores fixos e ENUM
 
-Este documento mapeia os 12 campos `INTEGER` informados para os enums.
-
-```text
 - instituicao.tipo_instituicao:
   1 = Escola
   2 = Faculdade
@@ -66,21 +63,9 @@ Este documento mapeia os 12 campos `INTEGER` informados para os enums.
 - ordem_servico.prioridade:
   Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
 
-```
-
-## Resumo do mapeamento
-
-| Campo | Enum da API | Resultado |
-| --- | --- | --- |
-| `instituicao.tipo_instituicao` | `TipoInstituicao` | Mapeado. |
-| `contrato.status` | — | Sem enum. |
-| `pagamento.status` | — | Sem enum. |
-| `pagamento.metodo_pagamento` | — | Sem enum. |
-| `usuario.tipo_acesso` | `TipoAcesso` | Mapeado. |
-| `aptidao.categoria_problema` | `CategoriaProblema` | Mapeado. |
-| `local_endereco.tipo_local_endereco` | `TipoLocalEndereco` | Mapeado. |
-| `problema.status` | `StatusProblema` | Mapeado. |
-| `ocorrencia.categoria_problema` | `CategoriaProblema` | Mapeado. |
-| `ocorrencia.prioridade` | — | Sem enum; `CHECK` aceita 0 a 2. |
-| `ordem_servico.categoria_problema` | `CategoriaProblema` | Mapeado. |
-| `ordem_servico.prioridade` | — | Sem enum; `CHECK` aceita 0 a 2. |
+- status_ordem_servico:
+  Não há enum, mas a tabela possui valores fixos:
+  - Não iniciadas
+  - Em andamento
+  - Pausadas
+  - Finalizadas
