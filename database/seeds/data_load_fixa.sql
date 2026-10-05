@@ -1,437 +1,898 @@
 -- ===================================================
--- SCRIPT DE MASSA DE DADOS (SEED)
+-- DATALOAD / MASSA DE TESTE - FIXA
 -- Requisito: carga inicial de pelo menos 500 registros
--- verossímeis para testes de volume.
--- ---------------------------------------------------
--- Total gerado por este script: ~860 registros
--- ---------------------------------------------------
--- OBS 1: Execução sequencial pós-DDL em banco limpo,
---        considerando IDs SERIAL iniciando em 1 sem
---        lacunas (nenhum INSERT/DELETE anterior).
--- OBS 2: Mapeamento de enums/códigos inteiros:
---        • instituicao.tipo_instituicao        -> 1=Escola, 2=Faculdade, 3=Empresa, 4=Órgão Público
---        • contrato.status                     -> 1=Ativo, 2=Inativo, 3=Cancelado
---        • pagamento.status                    -> 1=Pendente, 2=Aprovado, 3=Rejeitado
---        • pagamento.metodo_pagamento          -> 1=Crédito, 2=Débito, 3=Pix
---        • usuario.tipo_acesso                 -> 1=Administrador, 2=Gestor, 3=Técnico, 4=Solicitante
---        • categoria_problema (aptidao/ocorrencia/ordem_servico)
---                                               -> 1=Elétrica, 2=Hidráulica, 3=Mecânica, 4=Informática,
---                                                  5=Mobiliário, 6=Climatização, 7=Rede e Conectividade,
---                                                  8=Segurança, 9=Iluminação, 10=Limpeza e Conservação
---        • local_endereco.tipo_local_endereco  -> 1=Sala de Aula, 2=Laboratório, 3=Depto. Administrativo,
---                                                  4=Auditório, 5=Almoxarifado, 6=Área Comum
---        • problema.status                     -> 0=Pendente, 1=Aprovado, 2=Reprovado
---        • ocorrencia.prioridade / ordem_servico.prioridade
---                                               -> sem enum nomeado nas APIs; apenas CHECK 0 a 2
--- OBS 3: Arco exclusivo em `foto` (`ck_foto_apenas_uma_fk`): exatamente 1 FK preenchida por registro.
--- OBS 4: `turno.hora_inicio`/`hora_fim` em segundos (0 a 86400), respeitando `atravessa_meia_noite`.
--- OBS 5: Mapeamento 1:1 estrito entre `ordem_servico` e `problema`: SOMENTE problemas com
---        status = 1 (Aprovado) geram ordem de serviço.
--- OBS 6: `problema.motivo_recusa` preenchido única e exclusivamente quando status = 2 (Reprovado),
---        respeitando `ck_motivo_recusa_status_recusado`.
--- OBS 7: Modelo v3 NÃO possui hierarquia entre usuários (coluna `gerente_id` foi removida do
---        schema); todos os 60 usuários são gerados sem gestor vinculado.
--- OBS 8: `endereco.cnpj` é único por endereço/franquia (10 CNPJs distintos). `instituicao` não
---        possui mais coluna `cnpj` (migrada para `endereco`), mas ganhou `email_corporativo`
---        (nullable, UNIQUE quando preenchido) e manteve `tipo_instituicao`/`dominio_email`.
--- OBS 9: Integridade referencial garantida via ranges de ID fixos e conhecidos (ver contagens
---        por tabela nos comentários de cada bloco).
--- OBS 10: `observacao_conclusao.dificuldade` -> 1=Fácil, 2=Médio, 3=Difícil (definido no
---         comentário do próprio DDL; sem enum correspondente nas APIs).
--- OBS 11: Tabela `feedback` (nova nesta versão do schema) armazena comentários livres de
---         usuários sobre o aplicativo; campos `comentario`/`ideia_central` são texto livre,
---         sem enum associado.
+--            verossímeis para testes de volume.
+--
+-- Total aproximado gerado: 2.710 registros.
+-- Execução esperada: banco recém-criado e vazio.
+--
+-- Senha padrão de TODOS os usuários e super admins: 1234
+-- Hash BCrypt (cost 12): $2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe
+--
+-- Valores fixos / enums utilizados:
+-- instituicao.tipo_instituicao:
+--   1=Escola, 2=Faculdade, 3=Empresa, 4=Órgão Público
+-- contrato.status:
+--   1=Ativo, 2=Inativo, 3=Cancelado
+-- pagamento.status:
+--   1=Pendente, 2=Aprovado, 3=Rejeitado
+-- pagamento.metodo_pagamento:
+--   1=Crédito, 2=Débito, 3=Pix
+-- usuario.tipo_acesso:
+--   1=Administrador, 2=Gestor, 3=Técnico, 4=Solicitante
+-- categoria_problema:
+--   1=Elétrica, 2=Hidráulica, 3=Mecânica, 4=Informática,
+--   5=Mobiliário, 6=Climatização, 7=Rede e Conectividade,
+--   8=Segurança, 9=Iluminação, 10=Limpeza e Conservação
+-- local_endereco.tipo_local_endereco:
+--   1=Sala de Aula, 2=Laboratório, 3=Depto. Administrativo,
+--   4=Auditório, 5=Almoxarifado, 6=Área Comum
+-- problema.status:
+--   0=Pendente, 1=Aprovado, 2=Reprovado
+-- observacao_conclusao.dificuldade:
+--   1=Fácil, 2=Médio, 3=Difícil
+-- ocorrencia.prioridade / ordem_servico.prioridade:
+--   valores permitidos de 0 a 2
+-- status_ordem_servico (IDs fixos neste dataload):
+--   1=Não iniciadas, 2=Em andamento, 3=Pausadas, 4=Finalizadas
 -- ===================================================
 
 BEGIN;
 
 -- ===================================================
--- 1) super_admin (3)
+-- 1. SUPER ADMIN (3)
 -- ===================================================
-INSERT INTO super_admin (nome, email, senha_hash, esta_ativo) VALUES
-('Rafael Monteiro', 'rafael.monteiro@plataforma.com', 'hash_senha_001', TRUE),
-('Juliana Prado',    'juliana.prado@plataforma.com',   'hash_senha_002', TRUE),
-('Marcelo Nogueira', 'marcelo.nogueira@plataforma.com','hash_senha_003', FALSE);
+INSERT INTO super_admin (id, nome, email, senha_hash, esta_ativo) VALUES
+(1, 'Rafael Monteiro', 'rafael.monteiro@fixa.com.br', '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe', TRUE),
+(2, 'Juliana Prado', 'juliana.prado@fixa.com.br', '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe', TRUE),
+(3, 'Marcelo Nogueira', 'marcelo.nogueira@fixa.com.br', '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe', TRUE);
 
 -- ===================================================
--- 2) instituicao (5)
+-- 2. INSTITUIÇÃO (12)
 -- ===================================================
-INSERT INTO instituicao (nome, tipo_instituicao, email_corporativo, dominio_email, esta_ativo)
+INSERT INTO instituicao (
+    id, nome, tipo_instituicao, email_corporativo,
+    dominio_email, data_criacao, esta_ativo
+)
 SELECT
-    (ARRAY['Colégio Horizonte','Faculdade Vértice','Indústrias Aurora','Secretaria Municipal de Obras','Instituto Educacional Nova Era'])[n],
-    (ARRAY[1,2,3,4,1])[n],
-    (ARRAY['contato@colegiohorizonte.edu.br','contato@faculdadevertice.edu.br','contato@industriasaurora.com.br','contato@sec-obras.gov.br','contato@institutonovaera.edu.br'])[n],
-    (ARRAY['colegiohorizonte.edu.br','faculdadevertice.edu.br','industriasaurora.com.br','sec-obras.gov.br','institutonovaera.edu.br'])[n],
-    TRUE
-FROM generate_series(1,5) AS n;
-
--- ===================================================
--- 3) endereco (10) — 2 por instituição, cnpj único por endereço
--- ===================================================
-INSERT INTO endereco (instituicao_id, cnpj, logradouro, numero, complemento, bairro, cidade, estado, cep, esta_ativo)
-SELECT
-    ((n-1)/2)+1,
-    LPAD((10000000000000 + n * 137)::text, 14, '0'),
-    (ARRAY['Rua das Acácias','Av. Paulista','Rua Sete de Setembro','Rua dos Andradas','Av. Brasil','Rua XV de Novembro','Rua Marechal Deodoro','Av. Ipiranga','Rua Barão do Rio Branco','Rua Voluntários da Pátria'])[n],
-    (100 + n * 10)::text,
-    CASE WHEN n % 3 = 0 THEN 'Bloco ' || n ELSE NULL END,
-    (ARRAY['Centro','Jardim América','Vila Nova','Boa Vista','Santa Cecília','Cidade Alta','Bela Vista','Alto da Glória','Jardim Europa','Vila Industrial'])[n],
-    (ARRAY['São Paulo','Campinas','Curitiba','Porto Alegre','Belo Horizonte','Salvador','Recife','Fortaleza','Brasília','Florianópolis'])[n],
-    (ARRAY['SP','SP','PR','RS','MG','BA','PE','CE','DF','SC'])[n],
-    LPAD((1000000 + n * 111)::text, 8, '0'),
-    TRUE
-FROM generate_series(1,10) AS n;
-
--- ===================================================
--- 4) plano (4)
--- ===================================================
-INSERT INTO plano (nome, valor, descricao, duracao_meses, esta_ativo) VALUES
-('Plano Básico',      499.90,  'Suporte a chamados essenciais com SLA padrão.', 12, TRUE),
-('Plano Intermediário',899.90, 'Inclui gestão de equipamentos e turnos.',        12, TRUE),
-('Plano Avançado',    1599.90, 'Recursos completos com relatórios avançados.',   24, TRUE),
-('Plano Corporativo', 2999.90, 'Atendimento dedicado para múltiplas unidades.',  36, TRUE);
-
--- ===================================================
--- 5) contrato (10) — 1 por endereço; status 1/2/3 (Ativo/Inativo/Cancelado)
--- ===================================================
-INSERT INTO contrato (plano_id, endereco_id, data_inicio, data_fim, status)
-SELECT
-    ((n-1) % 4) + 1,
     n,
-    (CURRENT_DATE - ((n * 45) || ' days')::interval)::date,
-    (CURRENT_DATE - ((n * 45) || ' days')::interval + interval '12 months')::date,
-    ((n % 3) + 1)
-FROM generate_series(1,10) AS n;
+    (ARRAY[
+        'Colégio Horizonte', 'Faculdade Vértice', 'Indústrias Aurora',
+        'Secretaria Municipal de Obras', 'Escola Nova Geração', 'Universidade Integra',
+        'Grupo Logística Sul', 'Prefeitura de Vila Serena', 'Colégio Monte Azul',
+        'Centro Universitário Alpha', 'TechParts Brasil', 'Instituto Municipal de Educação'
+    ])[n],
+    ((n - 1) % 4) + 1,
+    'contato' || n || '@instituicao' || n || '.com.br',
+    'instituicao' || n || '.com.br',
+    NOW() - ((420 - n * 12) || ' days')::INTERVAL,
+    TRUE
+FROM generate_series(1, 12) AS n;
 
 -- ===================================================
--- 6) pagamento (20) — 2 por contrato; status 1/2/3 (Finalizado/Pendente/Cancelado)
+-- 3. ENDEREÇO (24) - 2 unidades por instituição
 -- ===================================================
-INSERT INTO pagamento (contrato_id, data_pagamento, valor_pago, status, metodo_pagamento)
+INSERT INTO endereco (
+    id, instituicao_id, cnpj, logradouro, numero, complemento,
+    bairro, cidade, estado, cep, data_criacao, esta_ativo
+)
 SELECT
-    ((n-1)/2)+1,
-    NOW() - ((n * 15) || ' days')::interval,
-    (ARRAY[499.90,899.90,1599.90,2999.90])[(((n-1)/2) % 4) + 1],
-    ((n % 3) + 1),
-    ((n % 3) + 1)
-FROM generate_series(1,20) AS n;
+    n,
+    ((n - 1) / 2) + 1,
+    LPAD((12000000000000 + n * 7919)::TEXT, 14, '0'),
+    (ARRAY[
+        'Rua das Acácias', 'Avenida Paulista', 'Rua Sete de Setembro',
+        'Avenida Brasil', 'Rua XV de Novembro', 'Rua das Palmeiras',
+        'Avenida Ipiranga', 'Rua Marechal Deodoro'
+    ])[((n - 1) % 8) + 1],
+    (100 + n * 7)::TEXT,
+    CASE WHEN n % 3 = 0 THEN 'Bloco ' || CHR(64 + ((n - 1) % 5) + 1) ELSE NULL END,
+    (ARRAY['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Boa Vista', 'Vila Industrial'])[((n - 1) % 6) + 1],
+    (ARRAY['São Paulo', 'Campinas', 'Osasco', 'Barueri', 'Santo André', 'Guarulhos'])[((n - 1) % 6) + 1],
+    'SP',
+    LPAD((6000000 + n * 173)::TEXT, 8, '0'),
+    NOW() - ((360 - n * 8) || ' days')::INTERVAL,
+    TRUE
+FROM generate_series(1, 24) AS n;
 
 -- ===================================================
--- 7) usuario (60) — SEM hierarquia (gerente_id não existe no schema v3)
---    1-5   Administradores
---    6-15  Gestores
---    16-40 Técnicos
---    41-60 Solicitantes
+-- 4. PLANOS (4)
 -- ===================================================
-INSERT INTO usuario (endereco_id, nome_completo, email, tipo_acesso, senha_hash, cargo, data_nascimento, esta_ativo, primeiro_acesso)
+INSERT INTO plano (id, nome, valor, descricao, duracao_meses, data_criacao, esta_ativo) VALUES
+(1, 'Essencial',    1490.00, 'Gestão essencial de chamados de manutenção.', 12, NOW() - INTERVAL '400 days', TRUE),
+(2, 'Profissional', 2490.00, 'Gestão de manutenção, equipes e equipamentos.', 12, NOW() - INTERVAL '400 days', TRUE),
+(3, 'Corporativo',  3990.00, 'Recursos avançados para múltiplas unidades.', 24, NOW() - INTERVAL '400 days', TRUE),
+(4, 'Enterprise',   6490.00, 'Operação completa com maior escala e suporte.', 24, NOW() - INTERVAL '400 days', TRUE);
+
+-- ===================================================
+-- 5. CONTRATOS (24) - 1 por endereço
+-- ===================================================
+INSERT INTO contrato (
+    id, plano_id, endereco_id, data_inicio, data_fim, status, data_criacao
+)
 SELECT
-    ((n-1) % 10) + 1 AS endereco_id,
-    (ARRAY['Ana','Bruno','Carla','Diego','Elaine','Fábio','Gabriela','Heitor','Iris','João',
-           'Karina','Leandro','Marina','Nelson','Otávia','Paulo','Queila','Rodrigo','Sabrina','Tiago'])[((n-1) % 20)+1]
+    n,
+    ((n - 1) % 4) + 1,
+    n,
+    (CURRENT_DATE - (220 - n * 3))::DATE,
+    ((CURRENT_DATE - (220 - n * 3)) + (INTERVAL '1 month' * p.duracao_meses))::DATE,
+    CASE
+        WHEN n % 8 = 0 THEN 3
+        WHEN n % 6 = 0 THEN 2
+        ELSE 1
+    END,
+    NOW() - ((220 - n * 3) || ' days')::INTERVAL
+FROM generate_series(1, 24) AS n
+JOIN plano p ON p.id = ((n - 1) % 4) + 1;
+
+-- ===================================================
+-- 6. PAGAMENTOS (72) - 3 por contrato
+-- ===================================================
+INSERT INTO pagamento (
+    id, contrato_id, data_pagamento, valor_pago,
+    status, metodo_pagamento, data_criacao
+)
+SELECT
+    ((c.id - 1) * 3) + parcela,
+    c.id,
+    c.data_inicio::TIMESTAMP + (INTERVAL '30 days' * parcela),
+    p.valor,
+    CASE
+        WHEN (((c.id - 1) * 3) + parcela) % 11 = 0 THEN 3
+        WHEN (((c.id - 1) * 3) + parcela) % 7 = 0 THEN 1
+        ELSE 2
+    END,
+    ((((c.id - 1) * 3) + parcela - 1) % 3) + 1,
+    c.data_inicio::TIMESTAMP + (INTERVAL '30 days' * parcela)
+FROM contrato c
+JOIN plano p ON p.id = c.plano_id
+CROSS JOIN generate_series(1, 3) AS parcela;
+
+-- ===================================================
+-- 7. USUÁRIOS (144) - 6 por endereço
+-- 1 Administrador, 1 Gestor, 2 Técnicos e 2 Solicitantes
+-- ===================================================
+INSERT INTO usuario (
+    id, endereco_id, nome_completo, email, tipo_acesso, senha_hash,
+    cargo, data_nascimento, data_criacao, esta_ativo, primeiro_acesso
+)
+SELECT
+    n,
+    ((n - 1) / 6) + 1,
+    (ARRAY[
+        'Ana', 'Bruno', 'Carla', 'Diego', 'Elaine', 'Fábio',
+        'Gabriela', 'Heitor', 'Iris', 'João', 'Karina', 'Leandro',
+        'Marina', 'Nelson', 'Otávia', 'Paulo', 'Renata', 'Rodrigo',
+        'Sabrina', 'Tiago', 'Vanessa', 'William', 'Yasmin', 'Lucas'
+    ])[((n - 1) % 24) + 1]
     || ' ' ||
-    (ARRAY['Almeida','Barbosa','Cardoso','Dias','Esteves','Farias','Gonçalves','Henriques','Ibrahim','Junqueira',
-           'Klein','Lopes','Martins','Nascimento','Oliveira','Pires','Quintana','Ribeiro','Sales','Teixeira'])[((n*7-1) % 20)+1]
-    AS nome_completo,
-    'usuario' || n || '@plataforma.com',
-    CASE
-        WHEN n <= 5  THEN 1
-        WHEN n <= 15 THEN 2
-        WHEN n <= 40 THEN 3
-        ELSE               4
-    END AS tipo_acesso,
-    'hash_senha_' || LPAD(n::text, 3, '0'),
-    CASE
-        WHEN n <= 5  THEN 'Administrador de Plataforma'
-        WHEN n <= 15 THEN 'Gestor de Facilities'
-        WHEN n <= 40 THEN 'Técnico de Manutenção'
-        ELSE               'Solicitante'
-    END AS cargo,
-    (DATE '1975-01-01' + ((n * 137) || ' days')::interval)::date,
-    (n % 4) <> 0,
-    (n % 5) = 0
-FROM generate_series(1,60) AS n;
-
--- ===================================================
--- 8) aptidao (50) — apenas técnicos (usuario_id 16-40), 2 categorias por técnico
--- ===================================================
-INSERT INTO aptidao (usuario_id, categoria_problema, nota, esta_ativo)
-SELECT
-    usuario_id,
-    categoria_problema,
-    nota,
-    TRUE
-FROM (
-    SELECT
-        16 + k AS usuario_id,
-        (k % 10) + 1 AS categoria_problema,
-        ROUND((5 + (k % 5) * 0.9)::numeric, 2) AS nota
-    FROM generate_series(0,24) AS k
-    UNION ALL
-    SELECT
-        16 + k AS usuario_id,
-        ((k + 3) % 10) + 1 AS categoria_problema,
-        ROUND((6 + (k % 4) * 1.1)::numeric, 2) AS nota
-    FROM generate_series(0,24) AS k
-) AS aptidoes;
-
--- ===================================================
--- 8b) feedback (25) — comentários livres de usuários sobre o app
--- ===================================================
-INSERT INTO feedback (usuario_id, comentario, ideia_central)
-SELECT
-    ((n-1) % 60) + 1,
     (ARRAY[
-        'O aplicativo poderia ter notificações mais rápidas quando uma OS é aberta.',
-        'Gostei da facilidade para registrar problemas com fotos.',
-        'Seria útil ter um filtro por categoria na tela de ocorrências.',
-        'O tempo de resposta do suporte técnico melhorou muito no último mês.',
-        'Faltou um jeito de acompanhar o histórico de turnos pelo celular.',
-        'A tela de equipamentos poderia mostrar o local de forma mais clara.',
-        'Adorei a nova função de aptidão por categoria dos técnicos.',
-        'Às vezes a tela de tarefas demora para carregar.',
-        'Seria bom ter um resumo diário das ordens de serviço concluídas.',
-        'O cadastro de problema está bem intuitivo, parabéns pela equipe.'
-    ])[((n-1) % 10) + 1],
-    (ARRAY[
-        'Notificações em tempo real',
-        'Anexo de fotos',
-        'Filtros avançados',
-        'Suporte mais ágil',
-        'Histórico de turnos',
-        'Mapa de locais',
-        'Aptidão por categoria',
-        'Performance da tela de tarefas',
-        'Resumo diário',
-        'Usabilidade geral'
-    ])[((n-1) % 10) + 1]
-FROM generate_series(1,25) AS n;
+        'Almeida', 'Barbosa', 'Cardoso', 'Dias', 'Esteves', 'Farias',
+        'Gonçalves', 'Henriques', 'Lopes', 'Martins', 'Nascimento', 'Oliveira'
+    ])[((n * 5 - 1) % 12) + 1],
+    'usuario' || n || '@instituicao' || ((((n - 1) / 6) / 2) + 1) || '.com.br',
+    CASE ((n - 1) % 6) + 1
+        WHEN 1 THEN 1
+        WHEN 2 THEN 2
+        WHEN 3 THEN 3
+        WHEN 4 THEN 3
+        ELSE 4
+    END,
+    '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe',
+    CASE ((n - 1) % 6) + 1
+        WHEN 1 THEN 'Administrador da Unidade'
+        WHEN 2 THEN 'Gestor de Facilities'
+        WHEN 3 THEN 'Técnico de Manutenção'
+        WHEN 4 THEN 'Técnico de Manutenção'
+        ELSE 'Colaborador Solicitante'
+    END,
+    DATE '1972-01-01' + ((n * 97) % 10500),
+    NOW() - ((190 - (n % 120)) || ' days')::INTERVAL,
+    TRUE,
+    FALSE
+FROM generate_series(1, 144) AS n;
 
 -- ===================================================
--- 9) local_endereco (40) — 4 por endereço
+-- 8. APTIDÕES (144) - 3 por técnico
 -- ===================================================
-INSERT INTO local_endereco (endereco_id, nome, tipo_local_endereco, descricao, esta_ativo)
+INSERT INTO aptidao (
+    id, usuario_id, categoria_problema, nota, data_criacao, esta_ativo
+)
 SELECT
-    ((n-1)/4)+1,
-    (ARRAY['Sala 101','Laboratório de Informática','Depto. Administrativo','Auditório Principal',
-           'Almoxarifado Central','Área de Convivência','Sala 202','Laboratório de Química'])[((n-1) % 8)+1]
-    || ' - Bloco ' || (((n-1)/4)+1),
-    (ARRAY[1,2,3,4,5,6,1,2])[((n-1) % 8)+1],
-    'Local utilizado para atividades cotidianas da unidade.',
+    ROW_NUMBER() OVER (ORDER BY u.id, g)::INTEGER,
+    u.id,
+    ((u.id + g * 3 - 1) % 10) + 1,
+    ROUND((6.0 + ((u.id + g) % 5) * 0.8)::NUMERIC, 2),
+    u.data_criacao + INTERVAL '1 day',
     TRUE
-FROM generate_series(1,40) AS n;
+FROM usuario u
+CROSS JOIN generate_series(1, 3) AS g
+WHERE u.tipo_acesso = 3;
 
 -- ===================================================
--- 10) evento (30)
+-- 9. FEEDBACKS (60)
 -- ===================================================
-INSERT INTO evento (usuario_id, local_endereco_id, titulo, descricao, descricao_local, observacao, data_hora_inicio, data_hora_fim)
-SELECT
-    ((n-1) % 60) + 1,
-    ((n-1) % 40) + 1,
-    'Manutenção Preventiva ' || n,
-    'Evento de manutenção preventiva programada.',
-    'Local conforme cadastro do setor.',
-    CASE WHEN n % 4 = 0 THEN 'Requer acompanhamento do responsável do setor.' ELSE NULL END,
-    NOW() + ((n * 2) || ' days')::interval,
-    NOW() + ((n * 2) || ' days')::interval + interval '2 hours'
-FROM generate_series(1,30) AS n;
-
--- ===================================================
--- 11) categoria_equipamento (10)
--- ===================================================
-INSERT INTO categoria_equipamento (usuario_id, nome, descricao, esta_ativo)
-SELECT
-    ((n-1) % 10) + 1,
-    (ARRAY['Informática','Elétrica','Mobiliário','Climatização','Iluminação',
-           'Hidráulica','Segurança','Rede','Limpeza','Mecânica'])[n],
-    'Categoria utilizada para classificação de equipamentos.',
-    TRUE
-FROM generate_series(1,10) AS n;
-
--- ===================================================
--- 12) marca_equipamento (8)
--- ===================================================
-INSERT INTO marca_equipamento (nome, descricao, esta_ativo) VALUES
-('TechLine',   'Fabricante de equipamentos de informática.', TRUE),
-('ClimaMax',   'Fabricante de equipamentos de climatização.', TRUE),
-('LuxLight',   'Fabricante de equipamentos de iluminação.',   TRUE),
-('HidroPro',   'Fabricante de equipamentos hidráulicos.',     TRUE),
-('SegurTech',  'Fabricante de equipamentos de segurança.',    TRUE),
-('MobiliaBras','Fabricante de mobiliário corporativo.',       TRUE),
-('RedeTotal',  'Fabricante de equipamentos de rede.',         TRUE),
-('MecanixCo',  'Fabricante de componentes mecânicos.',        TRUE);
-
--- ===================================================
--- 13) modelo_equipamento (20)
--- ===================================================
-INSERT INTO modelo_equipamento (marca_equipamento_id, categoria_equipamento_id, nome, descricao, esta_ativo)
-SELECT
-    ((n-1) % 8) + 1,
-    ((n-1) % 10) + 1,
-    'Modelo ' || n,
-    'Modelo padrão utilizado nas unidades da instituição.',
-    TRUE
-FROM generate_series(1,20) AS n;
-
--- ===================================================
--- 14) equipamento (80)
--- ===================================================
-INSERT INTO equipamento (usuario_id, modelo_equipamento_id, local_endereco_id, codigo, esta_ativo)
-SELECT
-    ((n-1) % 60) + 1,
-    ((n-1) % 20) + 1,
-    ((n-1) % 40) + 1,
-    'EQP-' || LPAD(n::text, 5, '0'),
-    (n % 6) <> 0
-FROM generate_series(1,80) AS n;
-
--- ===================================================
--- 15) problema (60)
---     status: n%4 IN (0,1) -> Aprovado(1) [30]; n%4=2 -> Pendente(0) [15]; n%4=3 -> Reprovado(2) [15]
--- ===================================================
-INSERT INTO problema (usuario_id, categoria_equipamento_id, local_endereco_id, titulo, descricao_problema, descricao_local, motivo_recusa, status)
-SELECT
-    40 + ((n-1) % 20) + 1,
-    ((n-1) % 10) + 1,
-    ((n-1) % 40) + 1,
-    'Problema reportado ' || n,
-    'Descrição detalhada do problema identificado pelo solicitante.',
-    'Local onde o problema foi identificado.',
-    CASE WHEN (n % 4) = 3 THEN 'Problema já solucionado anteriormente ou fora do escopo de atendimento.' ELSE NULL END,
-    CASE
-        WHEN (n % 4) IN (0,1) THEN 1
-        WHEN (n % 4) = 2      THEN 0
-        ELSE                       2
-    END
-FROM generate_series(1,60) AS n;
-
--- ===================================================
--- 16) ocorrencia (40)
--- ===================================================
-INSERT INTO ocorrencia (usuario_id, local_endereco_id, equipamento_id, categoria_problema, titulo, descricao_ocorrencia, descricao_local, prioridade, esta_ativo)
-SELECT
-    16 + ((n-1) % 25),
-    ((n-1) % 40) + 1,
-    ((n-1) % 80) + 1,
-    ((n-1) % 10) + 1,
-    'Ocorrência resolvida ' || n,
-    'Ocorrência identificada e solucionada diretamente pelo técnico responsável.',
-    'Local do equipamento conforme cadastro.',
-    (n % 3),
-    TRUE
-FROM generate_series(1,40) AS n;
-
--- ===================================================
--- 17) status_ordem_servico (5)
--- ===================================================
-INSERT INTO status_ordem_servico (nome, descricao) VALUES
-('Aberta',            'Ordem de serviço registrada e aguardando triagem.'),
-('Em Andamento',      'Ordem de serviço em execução por um técnico responsável.'),
-('Aguardando Peça',   'Execução pausada aguardando peça ou material.'),
-('Concluída',         'Ordem de serviço finalizada com sucesso.'),
-('Cancelada',         'Ordem de serviço cancelada antes da conclusão.');
-
--- ===================================================
--- 18) ordem_servico (30) — SOMENTE problemas com status = 1 (Aprovado), 1:1 estrito
--- ===================================================
-INSERT INTO ordem_servico (problema_id, usuario_id, status_ordem_servico_id, categoria_problema, data_prevista, prioridade)
-SELECT
-    p.id,
-    16 + ((rn-1) % 25),
-    ((rn-1) % 5) + 1,
-    ((rn-1) % 10) + 1,
-    NOW() + ((rn * 3) || ' days')::interval,
-    (rn % 3)
-FROM (
-    SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
-    FROM problema
-    WHERE status = 1
-) AS p;
-
--- ===================================================
--- 19) ordem_servico_status_historico (45) — ~1.5 por OS
--- ===================================================
-INSERT INTO ordem_servico_status_historico (ordem_servico_id, status_ordem_servico_id, data_atualizacao)
-SELECT
-    ((n-1) % 30) + 1,
-    ((n-1) % 5) + 1,
-    NOW() - ((n * 4) || ' hours')::interval
-FROM generate_series(1,45) AS n;
-
--- ===================================================
--- 20) tarefa (80) — distribuídas entre as 30 OS
--- ===================================================
-INSERT INTO tarefa (ordem_servico_id, status_ordem_servico_id, titulo, descricao)
-SELECT
-    ((n-1) % 30) + 1,
-    ((n-1) % 5) + 1,
-    'Tarefa ' || n,
-    'Etapa de execução vinculada à ordem de serviço correspondente.'
-FROM generate_series(1,80) AS n;
-
--- ===================================================
--- 21) tarefa_status_historico (100)
--- ===================================================
-INSERT INTO tarefa_status_historico (tarefa_id, status_ordem_servico_id, data_atualizacao)
-SELECT
-    ((n-1) % 80) + 1,
-    ((n-1) % 5) + 1,
-    NOW() - ((n * 3) || ' hours')::interval
-FROM generate_series(1,100) AS n;
-
--- ===================================================
--- 22) observacao_conclusao (15) — subconjunto de OS concluídas
--- ===================================================
-INSERT INTO observacao_conclusao (ordem_servico_id, dificuldade, observacao)
+INSERT INTO feedback (id, usuario_id, comentario, ideia_central, data_criacao)
 SELECT
     n,
-    ((n-1) % 3) + 1,
-    'Serviço concluído conforme solicitado, sem pendências adicionais.'
-FROM generate_series(1,15) AS n;
+    ((n * 7 - 1) % 144) + 1,
+    (ARRAY[
+        'O acompanhamento das ordens de serviço está mais simples.',
+        'Seria útil receber avisos quando uma OS mudar de status.',
+        'A tela de equipamentos facilita encontrar o patrimônio correto.',
+        'O fluxo para registrar um problema está rápido e claro.',
+        'Gostaria de filtros adicionais por local e prioridade.',
+        'O histórico de manutenção ajuda no acompanhamento da unidade.'
+    ])[((n - 1) % 6) + 1],
+    (ARRAY[
+        'Acompanhamento de OS', 'Notificações', 'Equipamentos',
+        'Registro de problemas', 'Filtros', 'Histórico de manutenção'
+    ])[((n - 1) % 6) + 1],
+    NOW() - ((n % 90) || ' days')::INTERVAL
+FROM generate_series(1, 60) AS n;
 
 -- ===================================================
--- 23) foto (50) — arco exclusivo: 10 registros por tipo de FK
+-- 10. LOCAIS DOS ENDEREÇOS (144) - 6 por endereço
 -- ===================================================
-INSERT INTO foto (problema_id, ocorrencia_id, ordem_servico_id, observacao_conclusao_id, usuario_id, url, esta_ativo)
-SELECT ((n-1) % 60) + 1, NULL::integer, NULL::integer, NULL::integer, NULL::integer,
-       'https://storage.plataforma.com/fotos/problema_' || n || '.jpg', TRUE
-FROM generate_series(1,10) AS n
-UNION ALL
-SELECT NULL::integer, ((n-1) % 40) + 1, NULL::integer, NULL::integer, NULL::integer,
-       'https://storage.plataforma.com/fotos/ocorrencia_' || n || '.jpg', TRUE
-FROM generate_series(1,10) AS n
-UNION ALL
-SELECT NULL::integer, NULL::integer, ((n-1) % 30) + 1, NULL::integer, NULL::integer,
-       'https://storage.plataforma.com/fotos/os_' || n || '.jpg', TRUE
-FROM generate_series(1,10) AS n
-UNION ALL
-SELECT NULL::integer, NULL::integer, NULL::integer, ((n-1) % 15) + 1, NULL::integer,
-       'https://storage.plataforma.com/fotos/conclusao_' || n || '.jpg', TRUE
-FROM generate_series(1,10) AS n
-UNION ALL
-SELECT NULL::integer, NULL::integer, NULL::integer, NULL::integer, ((n-1) % 60) + 1,
-       'https://storage.plataforma.com/fotos/usuario_' || n || '.jpg', TRUE
-FROM generate_series(1,10) AS n;
-
--- ===================================================
--- 24) turno (20) — 2 por endereço (1 diurno + 1 noturno cruzando meia-noite)
--- ===================================================
-INSERT INTO turno (endereco_id, nome, hora_inicio, hora_fim, atravessa_meia_noite, esta_ativo)
+INSERT INTO local_endereco (
+    id, endereco_id, nome, tipo_local_endereco,
+    descricao, data_criacao, esta_ativo
+)
 SELECT
-    ((n-1)/2)+1,
-    CASE WHEN n % 2 = 1 THEN 'Turno Diurno' ELSE 'Turno Noturno' END,
-    CASE WHEN n % 2 = 1 THEN 21600 ELSE 72000 END,  -- 06:00 ou 20:00
-    CASE WHEN n % 2 = 1 THEN 61200 ELSE 21600 END,  -- 17:00 ou 06:00 (dia seguinte)
-    CASE WHEN n % 2 = 1 THEN FALSE ELSE TRUE END,
+    n,
+    ((n - 1) / 6) + 1,
+    CASE ((n - 1) % 6) + 1
+        WHEN 1 THEN 'Sala de Aula ' || ((((n - 1) / 6) + 1)::TEXT)
+        WHEN 2 THEN 'Laboratório ' || ((((n - 1) / 6) + 1)::TEXT)
+        WHEN 3 THEN 'Administrativo ' || ((((n - 1) / 6) + 1)::TEXT)
+        WHEN 4 THEN 'Auditório ' || ((((n - 1) / 6) + 1)::TEXT)
+        WHEN 5 THEN 'Almoxarifado ' || ((((n - 1) / 6) + 1)::TEXT)
+        ELSE 'Área Comum ' || ((((n - 1) / 6) + 1)::TEXT)
+    END,
+    ((n - 1) % 6) + 1,
+    'Local cadastrado para controle de manutenção da unidade.',
+    NOW() - ((170 - (n % 100)) || ' days')::INTERVAL,
     TRUE
-FROM generate_series(1,20) AS n;
+FROM generate_series(1, 144) AS n;
 
 -- ===================================================
--- 25) turno_usuario (40) — pares únicos (turno_id, usuario_id)
+-- 11. EVENTOS (72)
 -- ===================================================
-INSERT INTO turno_usuario (turno_id, usuario_id, esta_ativo)
-SELECT ((n-1) % 20) + 1, 16 + ((n-1) % 20), TRUE
-FROM generate_series(1,20) AS n
-UNION ALL
-SELECT ((n-1) % 20) + 1, 41 + ((n-1) % 20), TRUE
-FROM generate_series(1,20) AS n;
+INSERT INTO evento (
+    id, usuario_id, local_endereco_id, titulo, descricao,
+    descricao_local, observacao, data_hora_inicio, data_hora_fim, data_criacao
+)
+SELECT
+    n,
+    (((( ((n - 1) % 24) + 1) - 1) * 6) + 2),
+    (((n - 1) % 144) + 1),
+    'Manutenção Preventiva ' || n,
+    'Evento programado para inspeção e manutenção preventiva.',
+    'Local definido no cadastro da unidade.',
+    CASE WHEN n % 4 = 0 THEN 'Necessário acesso acompanhado pelo gestor.' ELSE NULL END,
+    NOW() + ((n % 45) || ' days')::INTERVAL + INTERVAL '08 hours',
+    NOW() + ((n % 45) || ' days')::INTERVAL + INTERVAL '10 hours',
+    NOW() - ((n % 40) || ' days')::INTERVAL
+FROM generate_series(1, 72) AS n;
+
+-- ===================================================
+-- 12. CATEGORIAS DE EQUIPAMENTO (10)
+-- ===================================================
+INSERT INTO categoria_equipamento (
+    id, usuario_id, nome, descricao, data_criacao, esta_ativo
+)
+SELECT
+    n,
+    ((n - 1) * 6) + 2,
+    (ARRAY[
+        'Computadores', 'Ar-condicionado', 'Iluminação', 'Bombas Hidráulicas',
+        'Câmeras de Segurança', 'Roteadores', 'Mobiliário', 'Quadros Elétricos',
+        'Bebedouros', 'Equipamentos Mecânicos'
+    ])[n],
+    'Categoria de equipamentos utilizada pela manutenção.',
+    NOW() - INTERVAL '160 days',
+    TRUE
+FROM generate_series(1, 10) AS n;
+
+-- ===================================================
+-- 13. MARCAS DE EQUIPAMENTO (8)
+-- ===================================================
+INSERT INTO marca_equipamento (id, nome, descricao, data_criacao, esta_ativo) VALUES
+(1, 'TechLine',    'Equipamentos de informática.', NOW() - INTERVAL '160 days', TRUE),
+(2, 'ClimaMax',    'Equipamentos de climatização.', NOW() - INTERVAL '160 days', TRUE),
+(3, 'LuxLight',    'Equipamentos de iluminação.', NOW() - INTERVAL '160 days', TRUE),
+(4, 'HidroPro',    'Equipamentos hidráulicos.', NOW() - INTERVAL '160 days', TRUE),
+(5, 'SegurTech',   'Equipamentos de segurança.', NOW() - INTERVAL '160 days', TRUE),
+(6, 'MobiliaBras', 'Mobiliário institucional.', NOW() - INTERVAL '160 days', TRUE),
+(7, 'RedeTotal',   'Equipamentos de rede.', NOW() - INTERVAL '160 days', TRUE),
+(8, 'Mecanix',     'Componentes e equipamentos mecânicos.', NOW() - INTERVAL '160 days', TRUE);
+
+-- ===================================================
+-- 14. MODELOS DE EQUIPAMENTO (30)
+-- ===================================================
+INSERT INTO modelo_equipamento (
+    id, marca_equipamento_id, categoria_equipamento_id,
+    nome, descricao, data_criacao, esta_ativo
+)
+SELECT
+    n,
+    ((n - 1) % 8) + 1,
+    ((n - 1) % 10) + 1,
+    'Modelo ' || LPAD(n::TEXT, 2, '0'),
+    'Modelo de equipamento utilizado nas unidades da instituição.',
+    NOW() - ((150 - n) || ' days')::INTERVAL,
+    TRUE
+FROM generate_series(1, 30) AS n;
+
+-- ===================================================
+-- 15. EQUIPAMENTOS (144) - 1 por local
+-- ===================================================
+INSERT INTO equipamento (
+    id, usuario_id, modelo_equipamento_id, local_endereco_id,
+    codigo, data_criacao, esta_ativo
+)
+SELECT
+    n,
+    ((((l.endereco_id - 1) * 6) + 2)),
+    ((n - 1) % 30) + 1,
+    l.id,
+    'EQP-' || LPAD(n::TEXT, 5, '0'),
+    NOW() - ((140 - (n % 100)) || ' days')::INTERVAL,
+    TRUE
+FROM generate_series(1, 144) AS n
+JOIN local_endereco l ON l.id = n;
+
+-- ===================================================
+-- 16. PROBLEMAS (240)
+-- 160 aprovados, 48 pendentes e 32 reprovados
+-- ===================================================
+INSERT INTO problema (
+    id, usuario_id, categoria_equipamento_id, local_endereco_id,
+    titulo, descricao_problema, descricao_local, motivo_recusa,
+    data_criacao, status
+)
+SELECT
+    n,
+    ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END,
+    ((n - 1) % 10) + 1,
+    l.id,
+    (ARRAY[
+        'Falha elétrica', 'Vazamento identificado', 'Equipamento com ruído',
+        'Computador sem acesso', 'Móvel danificado', 'Ambiente sem climatização',
+        'Rede instável', 'Câmera sem sinal', 'Luminária apagada', 'Necessidade de limpeza técnica'
+    ])[((n - 1) % 10) + 1] || ' #' || n,
+    'Problema relatado por colaborador da unidade e encaminhado para análise da manutenção.',
+    l.nome,
+    CASE WHEN n > 208 THEN 'Solicitação recusada após análise por não se enquadrar no fluxo de manutenção.' ELSE NULL END,
+    NOW() - ((15 + (n * 7) % 150) || ' days')::INTERVAL,
+    CASE
+        WHEN n <= 160 THEN 1
+        WHEN n <= 208 THEN 0
+        ELSE 2
+    END
+FROM generate_series(1, 240) AS n
+JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1;
+
+-- ===================================================
+-- 17. OCORRÊNCIAS (100)
+-- ===================================================
+INSERT INTO ocorrencia (
+    id, usuario_id, local_endereco_id, categoria_equipamento_id,
+    categoria_problema, titulo, descricao_ocorrencia,
+    descricao_local, prioridade, data_criacao, esta_ativo
+)
+SELECT
+    n,
+    ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END,
+    l.id,
+    ((n - 1) % 10) + 1,
+    ((n - 1) % 10) + 1,
+    'Ocorrência resolvida #' || n,
+    'Ocorrência identificada e solucionada diretamente pelo técnico durante a rotina da unidade.',
+    l.nome,
+    (n - 1) % 3,
+    NOW() - ((5 + (n * 3) % 110) || ' days')::INTERVAL,
+    TRUE
+FROM generate_series(1, 100) AS n
+JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1;
+
+-- ===================================================
+-- 18. STATUS FIXOS DA ORDEM DE SERVIÇO (4)
+-- ===================================================
+INSERT INTO status_ordem_servico (id, nome, descricao) VALUES
+(1, 'Não iniciadas', 'Ordem de serviço criada, mas ainda não iniciada.'),
+(2, 'Em andamento',  'Ordem de serviço em execução por um técnico.'),
+(3, 'Pausadas',      'Ordem de serviço temporariamente pausada.'),
+(4, 'Finalizadas',   'Ordem de serviço finalizada pelo técnico responsável.');
+
+-- ===================================================
+-- 19. ORDENS DE SERVIÇO (160)
+-- Somente problemas aprovados geram OS.
+-- Distribuição de status:
+-- 40 Não iniciadas | 45 Em andamento | 25 Pausadas | 50 Finalizadas
+-- ===================================================
+WITH base AS (
+    SELECT
+        p.id AS n,
+        p.id AS problema_id,
+        l.endereco_id,
+        CASE
+            WHEN p.id <= 40 THEN 1
+            WHEN p.id <= 85 THEN 2
+            WHEN p.id <= 110 THEN 3
+            ELSE 4
+        END AS status_id,
+        CASE
+            WHEN p.id <= 40 THEN NOW() - (((p.id - 1) % 14) || ' days')::INTERVAL
+            WHEN p.id <= 85 THEN NOW() - ((1 + ((p.id - 41) % 25)) || ' days')::INTERVAL
+            WHEN p.id <= 110 THEN NOW() - ((5 + ((p.id - 86) % 30)) || ' days')::INTERVAL
+            ELSE NOW() - ((20 + ((p.id - 111) % 90)) || ' days')::INTERVAL
+        END AS criada_em
+    FROM problema p
+    JOIN local_endereco l ON l.id = p.local_endereco_id
+    WHERE p.id <= 160 AND p.status = 1
+)
+INSERT INTO ordem_servico (
+    id, problema_id, usuario_id, status_ordem_servico_id,
+    categoria_problema, data_prevista, prioridade, data_criacao
+)
+SELECT
+    n,
+    problema_id,
+    CASE
+        WHEN n BETWEEN 41 AND 64 THEN ((endereco_id - 1) * 6) + 4
+        WHEN n BETWEEN 65 AND 72 THEN ((endereco_id - 1) * 6) + 3
+        WHEN n % 2 = 0 THEN ((endereco_id - 1) * 6) + 3
+        ELSE ((endereco_id - 1) * 6) + 4
+    END,
+    status_id,
+    ((n - 1) % 10) + 1,
+    criada_em + CASE
+        WHEN status_id = 1 THEN INTERVAL '7 days'
+        WHEN status_id = 2 THEN INTERVAL '12 days'
+        WHEN status_id = 3 THEN INTERVAL '15 days'
+        ELSE INTERVAL '8 days'
+    END,
+    (n - 1) % 3,
+    criada_em
+FROM base;
+
+-- ===================================================
+-- 20. AUDITORIA DE STATUS DA OS (~249)
+-- Histórico coerente com o status atual de cada OS.
+-- ===================================================
+
+-- Entrada em andamento.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    1,
+    2,
+    os.data_criacao + ((4 + (os.id % 8)) || ' hours')::INTERVAL
+FROM ordem_servico os
+WHERE os.status_ordem_servico_id IN (2, 3, 4);
+
+-- Pausa das OS atualmente pausadas.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    2,
+    3,
+    os.data_criacao + INTERVAL '2 days'
+FROM ordem_servico os
+WHERE os.status_ordem_servico_id = 3;
+
+-- Pausas históricas em parte das OS finalizadas.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    2,
+    3,
+    os.data_criacao + INTERVAL '2 days'
+FROM ordem_servico os
+WHERE os.status_ordem_servico_id = 4
+  AND os.id % 3 = 0;
+
+-- Retorno das pausas históricas.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    3,
+    2,
+    os.data_criacao + INTERVAL '2 days 6 hours'
+FROM ordem_servico os
+WHERE os.status_ordem_servico_id = 4
+  AND os.id % 3 = 0;
+
+-- Primeira conclusão das OS finalizadas.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    2,
+    4,
+    os.data_criacao + ((4 + (os.id % 8)) || ' days')::INTERVAL
+FROM ordem_servico os
+WHERE os.status_ordem_servico_id = 4;
+
+-- Reabertura de 10 OS finalizadas.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    4,
+    2,
+    os.data_criacao + ((5 + (os.id % 8)) || ' days')::INTERVAL
+FROM ordem_servico os
+WHERE os.id BETWEEN 111 AND 120;
+
+-- Nova finalização após reabertura.
+INSERT INTO ordem_servico_status_auditoria (
+    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    2,
+    4,
+    os.data_criacao + ((6 + (os.id % 8)) || ' days')::INTERVAL
+FROM ordem_servico os
+WHERE os.id BETWEEN 111 AND 120;
+
+-- ===================================================
+-- 21. AUDITORIA DE REATRIBUIÇÃO DE TÉCNICO (40)
+-- Pressupõe a tabela ordem_servico_tecnico_auditoria já criada.
+-- ===================================================
+
+-- 24 OS com uma reatribuição.
+INSERT INTO ordem_servico_tecnico_auditoria (
+    ordem_servico_id, tecnico_anterior_id, tecnico_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    ((l.endereco_id - 1) * 6) + 3,
+    ((l.endereco_id - 1) * 6) + 4,
+    os.data_criacao + INTERVAL '6 hours'
+FROM ordem_servico os
+JOIN problema p ON p.id = os.problema_id
+JOIN local_endereco l ON l.id = p.local_endereco_id
+WHERE os.id BETWEEN 41 AND 64;
+
+-- 8 OS que foram reatribuídas e depois retornaram ao técnico inicial.
+INSERT INTO ordem_servico_tecnico_auditoria (
+    ordem_servico_id, tecnico_anterior_id, tecnico_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    ((l.endereco_id - 1) * 6) + 3,
+    ((l.endereco_id - 1) * 6) + 4,
+    os.data_criacao + INTERVAL '4 hours'
+FROM ordem_servico os
+JOIN problema p ON p.id = os.problema_id
+JOIN local_endereco l ON l.id = p.local_endereco_id
+WHERE os.id BETWEEN 65 AND 72;
+
+INSERT INTO ordem_servico_tecnico_auditoria (
+    ordem_servico_id, tecnico_anterior_id, tecnico_novo_id, data_alteracao
+)
+SELECT
+    os.id,
+    ((l.endereco_id - 1) * 6) + 4,
+    ((l.endereco_id - 1) * 6) + 3,
+    os.data_criacao + INTERVAL '10 hours'
+FROM ordem_servico os
+JOIN problema p ON p.id = os.problema_id
+JOIN local_endereco l ON l.id = p.local_endereco_id
+WHERE os.id BETWEEN 65 AND 72;
+
+-- ===================================================
+-- 22. TAREFAS (480) - 3 por OS
+-- ===================================================
+INSERT INTO tarefa (id, ordem_servico_id, titulo, descricao, data_criacao)
+SELECT
+    ((os.id - 1) * 3) + etapa,
+    os.id,
+    CASE etapa
+        WHEN 1 THEN 'Diagnosticar problema'
+        WHEN 2 THEN 'Executar manutenção'
+        ELSE 'Validar funcionamento'
+    END,
+    CASE etapa
+        WHEN 1 THEN 'Realizar diagnóstico inicial e identificar a causa do problema.'
+        WHEN 2 THEN 'Executar a atividade necessária para correção do problema.'
+        ELSE 'Testar o local ou equipamento após a execução da manutenção.'
+    END,
+    os.data_criacao + (etapa || ' hours')::INTERVAL
+FROM ordem_servico os
+CROSS JOIN generate_series(1, 3) AS etapa;
+
+-- ===================================================
+-- 23. OBSERVAÇÕES DE CONCLUSÃO (50)
+-- Uma para cada OS atualmente finalizada.
+-- ===================================================
+INSERT INTO observacao_conclusao (
+    id, ordem_servico_id, dificuldade, observacao, data_criacao
+)
+SELECT
+    ROW_NUMBER() OVER (ORDER BY os.id)::INTEGER,
+    os.id,
+    ((os.id - 1) % 3) + 1,
+    (ARRAY[
+        'Serviço concluído sem intercorrências e funcionamento validado.',
+        'Manutenção concluída após ajuste e testes no local.',
+        'Problema resolvido e operação normalizada após validação técnica.'
+    ])[((os.id - 1) % 3) + 1],
+    MAX(a.data_alteracao) + INTERVAL '30 minutes'
+FROM ordem_servico os
+JOIN ordem_servico_status_auditoria a
+    ON a.ordem_servico_id = os.id
+   AND a.status_novo_id = 4
+WHERE os.status_ordem_servico_id = 4
+GROUP BY os.id;
+
+-- ===================================================
+-- 24. FOTOS (300)
+-- Regra do arco exclusivo respeitada: exatamente uma FK preenchida.
+-- ===================================================
+
+-- 50 fotos de usuários.
+INSERT INTO foto (
+    id, problema_id, ocorrencia_id, ordem_servico_id,
+    observacao_conclusao_id, usuario_id, url, esta_ativo, data_criacao
+)
+SELECT
+    n, NULL, NULL, NULL, NULL, n,
+    'https://storage.fixa.local/usuarios/' || n || '.jpg',
+    TRUE,
+    NOW() - ((n % 100) || ' days')::INTERVAL
+FROM generate_series(1, 50) AS n;
+
+-- 100 fotos de problemas.
+INSERT INTO foto (
+    id, problema_id, ocorrencia_id, ordem_servico_id,
+    observacao_conclusao_id, usuario_id, url, esta_ativo, data_criacao
+)
+SELECT
+    50 + n, n, NULL, NULL, NULL, NULL,
+    'https://storage.fixa.local/problemas/' || n || '.jpg',
+    TRUE,
+    p.data_criacao + INTERVAL '15 minutes'
+FROM generate_series(1, 100) AS n
+JOIN problema p ON p.id = n;
+
+-- 60 fotos de OS.
+INSERT INTO foto (
+    id, problema_id, ocorrencia_id, ordem_servico_id,
+    observacao_conclusao_id, usuario_id, url, esta_ativo, data_criacao
+)
+SELECT
+    150 + n, NULL, NULL, n, NULL, NULL,
+    'https://storage.fixa.local/ordens/' || n || '.jpg',
+    TRUE,
+    os.data_criacao + INTERVAL '2 hours'
+FROM generate_series(1, 60) AS n
+JOIN ordem_servico os ON os.id = n;
+
+-- 40 fotos de ocorrências.
+INSERT INTO foto (
+    id, problema_id, ocorrencia_id, ordem_servico_id,
+    observacao_conclusao_id, usuario_id, url, esta_ativo, data_criacao
+)
+SELECT
+    210 + n, NULL, n, NULL, NULL, NULL,
+    'https://storage.fixa.local/ocorrencias/' || n || '.jpg',
+    TRUE,
+    o.data_criacao
+FROM generate_series(1, 40) AS n
+JOIN ocorrencia o ON o.id = n;
+
+-- 50 fotos das observações de conclusão.
+INSERT INTO foto (
+    id, problema_id, ocorrencia_id, ordem_servico_id,
+    observacao_conclusao_id, usuario_id, url, esta_ativo, data_criacao
+)
+SELECT
+    250 + n, NULL, NULL, NULL, n, NULL,
+    'https://storage.fixa.local/conclusoes/' || n || '.jpg',
+    TRUE,
+    oc.data_criacao
+FROM generate_series(1, 50) AS n
+JOIN observacao_conclusao oc ON oc.id = n;
+
+-- ===================================================
+-- 25. TURNOS (48) - manhã e tarde por endereço
+-- ===================================================
+INSERT INTO turno (
+    id, endereco_id, nome, hora_inicio, hora_fim,
+    atravessa_meia_noite, data_criacao, esta_ativo
+)
+SELECT
+    ((e.id - 1) * 2) + g,
+    e.id,
+    CASE WHEN g = 1 THEN 'Manhã' ELSE 'Tarde' END,
+    CASE WHEN g = 1 THEN 28800 ELSE 46800 END,
+    CASE WHEN g = 1 THEN 43200 ELSE 64800 END,
+    FALSE,
+    e.data_criacao + INTERVAL '1 day',
+    TRUE
+FROM endereco e
+CROSS JOIN generate_series(1, 2) AS g;
+
+-- ===================================================
+-- 26. TURNO_USUARIO (144) - 1 turno por usuário
+-- ===================================================
+INSERT INTO turno_usuario (
+    id, turno_id, usuario_id, data_criacao, esta_ativo
+)
+SELECT
+    u.id,
+    ((u.endereco_id - 1) * 2) + CASE WHEN ((u.id - 1) % 6) IN (0, 2, 4) THEN 1 ELSE 2 END,
+    u.id,
+    u.data_criacao + INTERVAL '2 days',
+    TRUE
+FROM usuario u;
+
+-- ===================================================
+-- AJUSTE DAS SEQUENCES
+-- Como os IDs foram definidos de forma determinística,
+-- as sequences precisam ser posicionadas no maior ID.
+-- ===================================================
+SELECT setval(pg_get_serial_sequence('super_admin', 'id'), MAX(id), TRUE) FROM super_admin;
+SELECT setval(pg_get_serial_sequence('instituicao', 'id'), MAX(id), TRUE) FROM instituicao;
+SELECT setval(pg_get_serial_sequence('endereco', 'id'), MAX(id), TRUE) FROM endereco;
+SELECT setval(pg_get_serial_sequence('plano', 'id'), MAX(id), TRUE) FROM plano;
+SELECT setval(pg_get_serial_sequence('contrato', 'id'), MAX(id), TRUE) FROM contrato;
+SELECT setval(pg_get_serial_sequence('pagamento', 'id'), MAX(id), TRUE) FROM pagamento;
+SELECT setval(pg_get_serial_sequence('usuario', 'id'), MAX(id), TRUE) FROM usuario;
+SELECT setval(pg_get_serial_sequence('aptidao', 'id'), MAX(id), TRUE) FROM aptidao;
+SELECT setval(pg_get_serial_sequence('feedback', 'id'), MAX(id), TRUE) FROM feedback;
+SELECT setval(pg_get_serial_sequence('local_endereco', 'id'), MAX(id), TRUE) FROM local_endereco;
+SELECT setval(pg_get_serial_sequence('evento', 'id'), MAX(id), TRUE) FROM evento;
+SELECT setval(pg_get_serial_sequence('categoria_equipamento', 'id'), MAX(id), TRUE) FROM categoria_equipamento;
+SELECT setval(pg_get_serial_sequence('marca_equipamento', 'id'), MAX(id), TRUE) FROM marca_equipamento;
+SELECT setval(pg_get_serial_sequence('modelo_equipamento', 'id'), MAX(id), TRUE) FROM modelo_equipamento;
+SELECT setval(pg_get_serial_sequence('equipamento', 'id'), MAX(id), TRUE) FROM equipamento;
+SELECT setval(pg_get_serial_sequence('problema', 'id'), MAX(id), TRUE) FROM problema;
+SELECT setval(pg_get_serial_sequence('ocorrencia', 'id'), MAX(id), TRUE) FROM ocorrencia;
+SELECT setval(pg_get_serial_sequence('status_ordem_servico', 'id'), MAX(id), TRUE) FROM status_ordem_servico;
+SELECT setval(pg_get_serial_sequence('ordem_servico', 'id'), MAX(id), TRUE) FROM ordem_servico;
+SELECT setval(pg_get_serial_sequence('ordem_servico_status_auditoria', 'id'), MAX(id), TRUE) FROM ordem_servico_status_auditoria;
+SELECT setval(pg_get_serial_sequence('ordem_servico_tecnico_auditoria', 'id'), MAX(id), TRUE) FROM ordem_servico_tecnico_auditoria;
+SELECT setval(pg_get_serial_sequence('tarefa', 'id'), MAX(id), TRUE) FROM tarefa;
+SELECT setval(pg_get_serial_sequence('observacao_conclusao', 'id'), MAX(id), TRUE) FROM observacao_conclusao;
+SELECT setval(pg_get_serial_sequence('foto', 'id'), MAX(id), TRUE) FROM foto;
+SELECT setval(pg_get_serial_sequence('turno', 'id'), MAX(id), TRUE) FROM turno;
+SELECT setval(pg_get_serial_sequence('turno_usuario', 'id'), MAX(id), TRUE) FROM turno_usuario;
+
+-- ===================================================
+-- VALIDAÇÕES DA CARGA
+-- ===================================================
+DO $$
+DECLARE
+    total_registros INTEGER;
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM super_admin) +
+        (SELECT COUNT(*) FROM instituicao) +
+        (SELECT COUNT(*) FROM endereco) +
+        (SELECT COUNT(*) FROM plano) +
+        (SELECT COUNT(*) FROM contrato) +
+        (SELECT COUNT(*) FROM pagamento) +
+        (SELECT COUNT(*) FROM usuario) +
+        (SELECT COUNT(*) FROM aptidao) +
+        (SELECT COUNT(*) FROM feedback) +
+        (SELECT COUNT(*) FROM local_endereco) +
+        (SELECT COUNT(*) FROM evento) +
+        (SELECT COUNT(*) FROM categoria_equipamento) +
+        (SELECT COUNT(*) FROM marca_equipamento) +
+        (SELECT COUNT(*) FROM modelo_equipamento) +
+        (SELECT COUNT(*) FROM equipamento) +
+        (SELECT COUNT(*) FROM problema) +
+        (SELECT COUNT(*) FROM ocorrencia) +
+        (SELECT COUNT(*) FROM status_ordem_servico) +
+        (SELECT COUNT(*) FROM ordem_servico) +
+        (SELECT COUNT(*) FROM ordem_servico_status_auditoria) +
+        (SELECT COUNT(*) FROM ordem_servico_tecnico_auditoria) +
+        (SELECT COUNT(*) FROM tarefa) +
+        (SELECT COUNT(*) FROM observacao_conclusao) +
+        (SELECT COUNT(*) FROM foto) +
+        (SELECT COUNT(*) FROM turno) +
+        (SELECT COUNT(*) FROM turno_usuario)
+    INTO total_registros;
+
+    IF total_registros < 500 THEN
+        RAISE EXCEPTION 'Carga insuficiente: % registros. Mínimo exigido: 500.', total_registros;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM instituicao WHERE tipo_instituicao NOT BETWEEN 1 AND 4) THEN
+        RAISE EXCEPTION 'Valor inválido em instituicao.tipo_instituicao.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM contrato WHERE status NOT BETWEEN 1 AND 3) THEN
+        RAISE EXCEPTION 'Valor inválido em contrato.status.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pagamento WHERE status NOT BETWEEN 1 AND 3 OR metodo_pagamento NOT BETWEEN 1 AND 3) THEN
+        RAISE EXCEPTION 'Valor inválido em pagamento.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM usuario WHERE tipo_acesso NOT BETWEEN 1 AND 4) THEN
+        RAISE EXCEPTION 'Valor inválido em usuario.tipo_acesso.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM aptidao WHERE categoria_problema NOT BETWEEN 1 AND 10) OR
+       EXISTS (SELECT 1 FROM ocorrencia WHERE categoria_problema NOT BETWEEN 1 AND 10) OR
+       EXISTS (SELECT 1 FROM ordem_servico WHERE categoria_problema NOT BETWEEN 1 AND 10) THEN
+        RAISE EXCEPTION 'Valor inválido em categoria_problema.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM local_endereco WHERE tipo_local_endereco NOT BETWEEN 1 AND 6) THEN
+        RAISE EXCEPTION 'Valor inválido em local_endereco.tipo_local_endereco.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM problema WHERE status NOT BETWEEN 0 AND 2) THEN
+        RAISE EXCEPTION 'Valor inválido em problema.status.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM observacao_conclusao WHERE dificuldade NOT BETWEEN 1 AND 3) THEN
+        RAISE EXCEPTION 'Valor inválido em observacao_conclusao.dificuldade.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM status_ordem_servico
+        WHERE (id, nome) NOT IN (
+            (1, 'Não iniciadas'),
+            (2, 'Em andamento'),
+            (3, 'Pausadas'),
+            (4, 'Finalizadas')
+        )
+    ) OR (SELECT COUNT(*) FROM status_ordem_servico) <> 4 THEN
+        RAISE EXCEPTION 'Os status fixos da ordem de serviço não correspondem ao padrão definido.';
+    END IF;
+
+    RAISE NOTICE 'Carga concluída com % registros.', total_registros;
+END;
+$$;
 
 COMMIT;
+
+-- ===================================================
+-- RESUMO DE REGISTROS POR TABELA
+-- ===================================================
+SELECT 'super_admin' AS tabela, COUNT(*) AS registros FROM super_admin
+UNION ALL SELECT 'instituicao', COUNT(*) FROM instituicao
+UNION ALL SELECT 'endereco', COUNT(*) FROM endereco
+UNION ALL SELECT 'plano', COUNT(*) FROM plano
+UNION ALL SELECT 'contrato', COUNT(*) FROM contrato
+UNION ALL SELECT 'pagamento', COUNT(*) FROM pagamento
+UNION ALL SELECT 'usuario', COUNT(*) FROM usuario
+UNION ALL SELECT 'aptidao', COUNT(*) FROM aptidao
+UNION ALL SELECT 'feedback', COUNT(*) FROM feedback
+UNION ALL SELECT 'local_endereco', COUNT(*) FROM local_endereco
+UNION ALL SELECT 'evento', COUNT(*) FROM evento
+UNION ALL SELECT 'categoria_equipamento', COUNT(*) FROM categoria_equipamento
+UNION ALL SELECT 'marca_equipamento', COUNT(*) FROM marca_equipamento
+UNION ALL SELECT 'modelo_equipamento', COUNT(*) FROM modelo_equipamento
+UNION ALL SELECT 'equipamento', COUNT(*) FROM equipamento
+UNION ALL SELECT 'problema', COUNT(*) FROM problema
+UNION ALL SELECT 'ocorrencia', COUNT(*) FROM ocorrencia
+UNION ALL SELECT 'status_ordem_servico', COUNT(*) FROM status_ordem_servico
+UNION ALL SELECT 'ordem_servico', COUNT(*) FROM ordem_servico
+UNION ALL SELECT 'ordem_servico_status_auditoria', COUNT(*) FROM ordem_servico_status_auditoria
+UNION ALL SELECT 'ordem_servico_tecnico_auditoria', COUNT(*) FROM ordem_servico_tecnico_auditoria
+UNION ALL SELECT 'tarefa', COUNT(*) FROM tarefa
+UNION ALL SELECT 'observacao_conclusao', COUNT(*) FROM observacao_conclusao
+UNION ALL SELECT 'foto', COUNT(*) FROM foto
+UNION ALL SELECT 'turno', COUNT(*) FROM turno
+UNION ALL SELECT 'turno_usuario', COUNT(*) FROM turno_usuario
+ORDER BY tabela;
