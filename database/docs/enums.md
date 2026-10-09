@@ -58,10 +58,14 @@
   3 = Difícil
 
 - ocorrencia.prioridade:
-  Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
+  0 = Alta
+  1 = Média
+  2 = Baixa
 
 - ordem_servico.prioridade:
-  Não há enum correspondente implementado na API. O esquema apenas restringe o valor ao intervalo de 0 a 2, sem nomear os códigos.
+  0 = Alta
+  1 = Média
+  2 = Baixa
 
 - status_ordem_servico:
   Não há enum, mas a tabela possui valores fixos:
