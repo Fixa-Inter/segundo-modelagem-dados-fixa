@@ -32,9 +32,12 @@
 -- observacao_conclusao.dificuldade:
 --   1=Fácil, 2=Médio, 3=Difícil
 -- ocorrencia.prioridade / ordem_servico.prioridade:
---   valores permitidos de 0 a 2
+--   0=Alta, 1=Média, 2=Baixa
 -- status_ordem_servico (IDs fixos neste dataload):
 --   1=Não iniciadas, 2=Em andamento, 3=Pausadas, 4=Finalizadas
+-- tarefa.status_ordem_servico_id reutiliza esses quatro status.
+-- Os IDs e as distribuições são determinísticos; as datas são relativas
+-- ao início da transação, preservando cenários atuais para os KPIs.
 -- ===================================================
 
 BEGIN;
@@ -187,10 +190,14 @@ SELECT
         ELSE 'Colaborador Solicitante'
     END,
     DATE '1972-01-01' + ((n * 97) % 10500),
-    NOW() - ((190 - (n % 120)) || ' days')::INTERVAL,
+    GREATEST(
+        NOW() - ((190 - (n % 120)) || ' days')::INTERVAL,
+        e.data_criacao + INTERVAL '1 day'
+    ),
     TRUE,
     FALSE
-FROM generate_series(1, 144) AS n;
+FROM generate_series(1, 144) AS n
+JOIN endereco e ON e.id = ((n - 1) / 6) + 1;
 
 -- ===================================================
 -- 8. APTIDÕES (144) - 3 por técnico
@@ -364,14 +371,19 @@ SELECT
     'Problema relatado por colaborador da unidade e encaminhado para análise da manutenção.',
     l.nome,
     CASE WHEN n > 208 THEN 'Solicitação recusada após análise por não se enquadrar no fluxo de manutenção.' ELSE NULL END,
-    NOW() - ((15 + (n * 7) % 150) || ' days')::INTERVAL,
+    GREATEST(
+        NOW() - ((15 + (n * 7) % 150) || ' days')::INTERVAL,
+        l.data_criacao + INTERVAL '1 day',
+        u.data_criacao + INTERVAL '1 day'
+    ),
     CASE
         WHEN n <= 160 THEN 1
         WHEN n <= 208 THEN 0
         ELSE 2
     END
 FROM generate_series(1, 240) AS n
-JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1;
+JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
+JOIN usuario u ON u.id = ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END;
 
 -- ===================================================
 -- 17. OCORRÊNCIAS (100)
@@ -391,10 +403,15 @@ SELECT
     'Ocorrência identificada e solucionada diretamente pelo técnico durante a rotina da unidade.',
     l.nome,
     (n - 1) % 3,
-    NOW() - ((5 + (n * 3) % 110) || ' days')::INTERVAL,
+    GREATEST(
+        NOW() - ((5 + (n * 3) % 110) || ' days')::INTERVAL,
+        l.data_criacao + INTERVAL '1 day',
+        u.data_criacao + INTERVAL '1 day'
+    ),
     TRUE
 FROM generate_series(1, 100) AS n
-JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1;
+JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
+JOIN usuario u ON u.id = ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END;
 
 -- ===================================================
 -- 18. STATUS FIXOS DA ORDEM DE SERVIÇO (4)
@@ -422,12 +439,15 @@ WITH base AS (
             WHEN p.id <= 110 THEN 3
             ELSE 4
         END AS status_id,
-        CASE
-            WHEN p.id <= 40 THEN NOW() - (((p.id - 1) % 14) || ' days')::INTERVAL
-            WHEN p.id <= 85 THEN NOW() - ((1 + ((p.id - 41) % 25)) || ' days')::INTERVAL
-            WHEN p.id <= 110 THEN NOW() - ((5 + ((p.id - 86) % 30)) || ' days')::INTERVAL
-            ELSE NOW() - ((20 + ((p.id - 111) % 90)) || ' days')::INTERVAL
-        END AS criada_em
+        GREATEST(
+            CASE
+                WHEN p.id <= 40 THEN NOW() - ((1 + ((p.id - 1) % 14)) || ' days')::INTERVAL
+                WHEN p.id <= 85 THEN NOW() - ((1 + ((p.id - 41) % 25)) || ' days')::INTERVAL
+                WHEN p.id <= 110 THEN NOW() - ((5 + ((p.id - 86) % 30)) || ' days')::INTERVAL
+                ELSE NOW() - ((20 + ((p.id - 111) % 90)) || ' days')::INTERVAL
+            END,
+            p.data_criacao + INTERVAL '1 hour'
+        ) AS criada_em
     FROM problema p
     JOIN local_endereco l ON l.id = p.local_endereco_id
     WHERE p.id <= 160 AND p.status = 1
@@ -460,6 +480,8 @@ FROM base;
 -- ===================================================
 -- 20. AUDITORIA DE STATUS DA OS (~249)
 -- Histórico coerente com o status atual de cada OS.
+-- As triggers existentes auditam UPDATE, não INSERT. Os estados atuais
+-- e os históricos são inseridos diretamente, sem duplicar a auditoria.
 -- ===================================================
 
 -- Entrada em andamento.
@@ -596,11 +618,24 @@ WHERE os.id BETWEEN 65 AND 72;
 
 -- ===================================================
 -- 22. TAREFAS (480) - 3 por OS
+-- Kanban próprio: diagnóstico, execução e validação têm estados distintos.
+-- OS não iniciadas: 1/1/1; em andamento: 4/2/1; pausadas: 4/3/1;
+-- finalizadas: 4/4/4.
 -- ===================================================
-INSERT INTO tarefa (id, ordem_servico_id, titulo, descricao, data_criacao)
+INSERT INTO tarefa (
+    id, ordem_servico_id, status_ordem_servico_id,
+    titulo, descricao, data_criacao
+)
 SELECT
     ((os.id - 1) * 3) + etapa,
     os.id,
+    CASE
+        WHEN os.status_ordem_servico_id = 1 THEN 1
+        WHEN os.status_ordem_servico_id = 4 THEN 4
+        WHEN etapa = 1 THEN 4
+        WHEN etapa = 2 THEN os.status_ordem_servico_id
+        ELSE 1
+    END,
     CASE etapa
         WHEN 1 THEN 'Diagnosticar problema'
         WHEN 2 THEN 'Executar manutenção'
@@ -779,6 +814,12 @@ SELECT setval(pg_get_serial_sequence('turno_usuario', 'id'), MAX(id), TRUE) FROM
 DO $$
 DECLARE
     total_registros INTEGER;
+    verificacao RECORD;
+    quantidade BIGINT;
+    ultimo_id BIGINT;
+    sequence_id TEXT;
+    sequence_ultimo_id BIGINT;
+    sequence_chamada BOOLEAN;
 BEGIN
     SELECT
         (SELECT COUNT(*) FROM super_admin) +
@@ -821,7 +862,7 @@ BEGIN
         RAISE EXCEPTION 'Valor inválido em contrato.status.';
     END IF;
 
-    IF EXISTS (SELECT 1 FROM pagamento WHERE status NOT BETWEEN 1 AND 3 OR metodo_pagamento NOT BETWEEN 1 AND 3) THEN
+    IF EXISTS (SELECT 1 FROM pagamento WHERE status IS NULL OR status NOT BETWEEN 1 AND 3 OR metodo_pagamento NOT BETWEEN 1 AND 3) THEN
         RAISE EXCEPTION 'Valor inválido em pagamento.';
     END IF;
 
@@ -858,6 +899,276 @@ BEGIN
         )
     ) OR (SELECT COUNT(*) FROM status_ordem_servico) <> 4 THEN
         RAISE EXCEPTION 'Os status fixos da ordem de serviço não correspondem ao padrão definido.';
+    END IF;
+
+    -- Confere a massa planejada para detectar perda de dados por JOINs.
+    FOR verificacao IN
+        SELECT * FROM (VALUES
+            ('super_admin', 3), ('instituicao', 12), ('endereco', 24),
+            ('plano', 4), ('contrato', 24), ('pagamento', 72),
+            ('usuario', 144), ('aptidao', 144), ('feedback', 60),
+            ('local_endereco', 144), ('evento', 72),
+            ('categoria_equipamento', 10), ('marca_equipamento', 8),
+            ('modelo_equipamento', 30), ('equipamento', 144),
+            ('problema', 240), ('ocorrencia', 100), ('status_ordem_servico', 4),
+            ('ordem_servico', 160), ('ordem_servico_status_auditoria', 249),
+            ('ordem_servico_tecnico_auditoria', 40), ('tarefa', 480),
+            ('observacao_conclusao', 50), ('foto', 300),
+            ('turno', 48), ('turno_usuario', 144)
+        ) AS massa(tabela, esperado)
+    LOOP
+        EXECUTE format('SELECT COUNT(*), MAX(id) FROM %I', verificacao.tabela)
+            INTO quantidade, ultimo_id;
+        IF quantidade <> verificacao.esperado THEN
+            RAISE EXCEPTION 'Quantidade inesperada em %: %, esperado %.',
+                verificacao.tabela, quantidade, verificacao.esperado;
+        END IF;
+
+        sequence_id := pg_get_serial_sequence(verificacao.tabela, 'id');
+        IF sequence_id IS NULL THEN
+            RAISE EXCEPTION 'Sequence SERIAL não encontrada para %.', verificacao.tabela;
+        END IF;
+        EXECUTE format('SELECT last_value, is_called FROM %s', sequence_id::REGCLASS)
+            INTO sequence_ultimo_id, sequence_chamada;
+        IF sequence_ultimo_id <> ultimo_id OR NOT sequence_chamada THEN
+            RAISE EXCEPTION 'Sequence não ajustada para %.', verificacao.tabela;
+        END IF;
+    END LOOP;
+
+    IF EXISTS (SELECT 1 FROM ocorrencia WHERE prioridade NOT BETWEEN 0 AND 2) OR
+       EXISTS (SELECT 1 FROM ordem_servico WHERE prioridade NOT BETWEEN 0 AND 2) THEN
+        RAISE EXCEPTION 'Prioridade inválida: esperado 0=Alta, 1=Média ou 2=Baixa.';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM contrato WHERE data_fim <= data_inicio) THEN
+        RAISE EXCEPTION 'Contrato com data de fim anterior ou igual à data de início.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM problema
+        WHERE (status = 2 AND motivo_recusa IS NULL)
+           OR (status <> 2 AND motivo_recusa IS NOT NULL)
+    ) THEN
+        RAISE EXCEPTION 'Motivo de recusa incompatível com o status do problema.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico GROUP BY problema_id HAVING COUNT(*) > 1
+    ) THEN
+        RAISE EXCEPTION 'Um problema não pode gerar mais de uma ordem de serviço.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico os
+        JOIN problema p ON p.id = os.problema_id
+        WHERE p.status <> 1
+    ) OR EXISTS (
+        SELECT 1 FROM problema p
+        WHERE p.status = 1
+          AND NOT EXISTS (SELECT 1 FROM ordem_servico os WHERE os.problema_id = p.id)
+    ) THEN
+        RAISE EXCEPTION 'A massa deve conter uma OS para cada problema aprovado, e apenas para aprovados.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico os JOIN usuario u ON u.id = os.usuario_id
+        WHERE u.tipo_acesso <> 3
+    ) OR EXISTS (
+        SELECT 1 FROM ocorrencia o JOIN usuario u ON u.id = o.usuario_id
+        WHERE u.tipo_acesso <> 3
+    ) OR EXISTS (
+        SELECT 1 FROM aptidao a JOIN usuario u ON u.id = a.usuario_id
+        WHERE u.tipo_acesso <> 3 OR a.nota NOT BETWEEN 0.00 AND 10.00
+    ) THEN
+        RAISE EXCEPTION 'Responsáveis por OS, ocorrências e aptidões devem ser técnicos; notas entre 0 e 10.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM aptidao
+        GROUP BY usuario_id, categoria_problema HAVING COUNT(*) > 1
+    ) THEN
+        RAISE EXCEPTION 'Aptidão duplicada para o mesmo técnico e categoria.';
+    END IF;
+
+    -- As tarefas têm estados próprios, respeitando a situação geral da OS.
+    IF EXISTS (
+        SELECT 1 FROM tarefa t
+        LEFT JOIN status_ordem_servico s ON s.id = t.status_ordem_servico_id
+        WHERE s.id IS NULL OR t.status_ordem_servico_id NOT BETWEEN 1 AND 4
+    ) THEN
+        RAISE EXCEPTION 'Tarefa com status inválido ou sem status existente.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM tarefa t JOIN ordem_servico os ON os.id = t.ordem_servico_id
+        WHERE (os.status_ordem_servico_id = 4 AND t.status_ordem_servico_id <> 4)
+           OR (os.status_ordem_servico_id = 1 AND t.status_ordem_servico_id <> 1)
+    ) THEN
+        RAISE EXCEPTION 'Tarefa incompatível com OS finalizada ou não iniciada.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico os
+        LEFT JOIN tarefa t ON t.ordem_servico_id = os.id
+        GROUP BY os.id, os.status_ordem_servico_id
+        HAVING COUNT(t.id) <> 3
+            OR (os.status_ordem_servico_id = 2 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id = 2) = 0)
+            OR (os.status_ordem_servico_id = 2 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id <> 4) = 0)
+            OR (os.status_ordem_servico_id = 3 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id = 3) = 0)
+    ) THEN
+        RAISE EXCEPTION 'Cada OS deve possuir três tarefas e um kanban coerente com seu andamento.';
+    END IF;
+
+    -- Confere a sequência de transições e a correspondência com o estado atual.
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico_status_auditoria a
+        JOIN ordem_servico os ON os.id = a.ordem_servico_id
+        LEFT JOIN status_ordem_servico anterior ON anterior.id = a.status_anterior_id
+        LEFT JOIN status_ordem_servico novo ON novo.id = a.status_novo_id
+        WHERE anterior.id IS NULL OR novo.id IS NULL
+           OR a.status_anterior_id = a.status_novo_id
+           OR a.data_alteracao < os.data_criacao OR a.data_alteracao > NOW()
+    ) THEN
+        RAISE EXCEPTION 'Auditoria de status com referências ou datas inválidas.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM (
+            SELECT a.*,
+                ROW_NUMBER() OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS posicao,
+                LAG(status_novo_id) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS status_previo,
+                LAG(data_alteracao) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS data_previa
+            FROM ordem_servico_status_auditoria a
+        ) historico
+        WHERE (posicao = 1 AND status_anterior_id <> 1)
+           OR (posicao > 1 AND status_anterior_id <> status_previo)
+           OR (posicao > 1 AND data_alteracao <= data_previa)
+    ) THEN
+        RAISE EXCEPTION 'Histórico de status descontínuo ou com transições simultâneas.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico os
+        LEFT JOIN LATERAL (
+            SELECT a.status_novo_id FROM ordem_servico_status_auditoria a
+            WHERE a.ordem_servico_id = os.id ORDER BY a.data_alteracao DESC, a.id DESC LIMIT 1
+        ) ultima ON TRUE
+        WHERE os.status_ordem_servico_id <> COALESCE(ultima.status_novo_id, 1)
+    ) THEN
+        RAISE EXCEPTION 'O status atual da OS diverge da última transição da auditoria.';
+    END IF;
+
+    IF (SELECT COUNT(DISTINCT ordem_servico_id) FROM ordem_servico_status_auditoria
+        WHERE status_anterior_id = 4 AND status_novo_id IN (2, 3)) <> 10 THEN
+        RAISE EXCEPTION 'A massa deve preservar dez OS reabertas.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM ordem_servico_tecnico_auditoria a
+        JOIN ordem_servico os ON os.id = a.ordem_servico_id
+        JOIN usuario anterior ON anterior.id = a.tecnico_anterior_id
+        JOIN usuario novo ON novo.id = a.tecnico_novo_id
+        WHERE anterior.tipo_acesso <> 3 OR novo.tipo_acesso <> 3
+           OR anterior.id = novo.id
+           OR a.data_alteracao < os.data_criacao OR a.data_alteracao > NOW()
+    ) THEN
+        RAISE EXCEPTION 'Reatribuição com responsável não técnico ou data inválida.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM (
+            SELECT a.*,
+                LAG(tecnico_novo_id) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS tecnico_previo,
+                LAG(data_alteracao) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS data_previa
+            FROM ordem_servico_tecnico_auditoria a
+        ) historico
+        WHERE (tecnico_previo IS NOT NULL AND tecnico_anterior_id <> tecnico_previo)
+           OR (data_previa IS NOT NULL AND data_alteracao <= data_previa)
+    ) OR EXISTS (
+        SELECT 1 FROM ordem_servico os
+        JOIN LATERAL (
+            SELECT a.tecnico_novo_id FROM ordem_servico_tecnico_auditoria a
+            WHERE a.ordem_servico_id = os.id ORDER BY a.data_alteracao DESC, a.id DESC LIMIT 1
+        ) ultima ON TRUE
+        WHERE os.usuario_id <> ultima.tecnico_novo_id
+    ) THEN
+        RAISE EXCEPTION 'Histórico de reatribuição descontínuo ou divergente do técnico atual.';
+    END IF;
+
+    IF (SELECT COUNT(DISTINCT ordem_servico_id) FROM ordem_servico_tecnico_auditoria) <> 32 THEN
+        RAISE EXCEPTION 'A massa deve preservar 32 OS reatribuídas.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM observacao_conclusao oc
+        JOIN ordem_servico os ON os.id = oc.ordem_servico_id
+        LEFT JOIN LATERAL (
+            SELECT MAX(data_alteracao) AS data_finalizacao
+            FROM ordem_servico_status_auditoria a
+            WHERE a.ordem_servico_id = os.id AND a.status_novo_id = 4
+        ) ultima ON TRUE
+        WHERE os.status_ordem_servico_id <> 4 OR ultima.data_finalizacao IS NULL
+           OR oc.data_criacao <= ultima.data_finalizacao OR oc.data_criacao > NOW()
+    ) OR EXISTS (
+        SELECT 1 FROM ordem_servico os
+        LEFT JOIN observacao_conclusao oc ON oc.ordem_servico_id = os.id
+        WHERE os.status_ordem_servico_id = 4 GROUP BY os.id HAVING COUNT(oc.id) <> 1
+    ) THEN
+        RAISE EXCEPTION 'Cada OS finalizada deve ter uma observação posterior à última finalização.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM foto
+        WHERE num_nonnulls(problema_id, ocorrencia_id, ordem_servico_id, observacao_conclusao_id, usuario_id) <> 1
+    ) THEN
+        RAISE EXCEPTION 'Cada foto deve possuir exatamente uma FK associativa preenchida.';
+    END IF;
+
+    -- Datas das relações diretas e dos registros operacionais.
+    IF EXISTS (
+        SELECT 1 FROM endereco e JOIN instituicao i ON i.id = e.instituicao_id
+        WHERE e.data_criacao < i.data_criacao
+    ) OR EXISTS (
+        SELECT 1 FROM usuario u JOIN endereco e ON e.id = u.endereco_id
+        WHERE u.data_criacao < e.data_criacao
+    ) OR EXISTS (
+        SELECT 1 FROM problema p
+        JOIN usuario u ON u.id = p.usuario_id
+        JOIN local_endereco l ON l.id = p.local_endereco_id
+        WHERE p.data_criacao < GREATEST(u.data_criacao, l.data_criacao) OR p.data_criacao > NOW()
+    ) OR EXISTS (
+        SELECT 1 FROM ocorrencia o
+        JOIN usuario u ON u.id = o.usuario_id
+        JOIN local_endereco l ON l.id = o.local_endereco_id
+        WHERE o.data_criacao < GREATEST(u.data_criacao, l.data_criacao) OR o.data_criacao > NOW()
+    ) OR EXISTS (
+        SELECT 1 FROM ordem_servico os JOIN problema p ON p.id = os.problema_id
+        WHERE os.data_criacao < p.data_criacao OR os.data_prevista <= os.data_criacao OR os.data_criacao > NOW()
+    ) OR EXISTS (
+        SELECT 1 FROM tarefa t JOIN ordem_servico os ON os.id = t.ordem_servico_id
+        WHERE t.data_criacao < os.data_criacao OR t.data_criacao > NOW()
+    ) THEN
+        RAISE EXCEPTION 'Datas incoerentes entre instituição, endereço, usuário, problema, ocorrência, OS ou tarefa.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM ordem_servico
+        WHERE status_ordem_servico_id IN (2, 3) AND data_prevista < NOW()
+    ) OR NOT EXISTS (
+        SELECT 1 FROM ordem_servico
+        WHERE status_ordem_servico_id IN (2, 3) AND data_prevista >= NOW()
+    ) THEN
+        RAISE EXCEPTION 'Os KPIs precisam de OS abertas atrasadas e dentro do prazo.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM usuario
+        WHERE senha_hash <> '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe'
+    ) OR EXISTS (
+        SELECT 1 FROM super_admin
+        WHERE senha_hash <> '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe'
+    ) THEN
+        RAISE EXCEPTION 'Todos os usuários e super administradores devem utilizar o BCrypt padrão de 1234.';
     END IF;
 
     RAISE NOTICE 'Carga concluída com % registros.', total_registros;
