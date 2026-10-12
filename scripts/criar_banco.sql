@@ -86,8 +86,8 @@
 
 \echo '4. Criando triggers...'
 
-\ir ../database/triggers/auditoria_status_ordem_servico.sql
-\ir ../database/triggers/auditoria_tecnico_ordem_servico.sql
+\ir ../database/triggers/auditar_status_ordem_servico.sql
+\ir ../database/triggers/auditar_tecnico_ordem_servico.sql
 
 
 -- ===================================================
@@ -96,8 +96,23 @@
 
 \echo '5. Criando views...'
 
--- Views analíticas de BI serão adicionadas aqui.
--- \ir ../database/views/nome_view.sql
+-- DIMENSÕES
+
+\ir ../database/views/dim_tempo.sql
+\ir ../database/views/dim_tecnico.sql
+\ir ../database/views/dim_categoria_problema.sql
+\ir ../database/views/dim_categoria_equipamento.sql
+\ir ../database/views/dim_instituicao.sql
+\ir ../database/views/dim_endereco.sql
+\ir ../database/views/dim_local.sql
+\ir ../database/views/dim_status_ordem_servico.sql
+\ir ../database/views/dim_status_problema.sql
+
+-- FATOS
+
+\ir ../database/views/fato_ordem_servico.sql
+\ir ../database/views/fato_problema.sql
+\ir ../database/views/fato_ocorrencia.sql
 
 
 -- ===================================================

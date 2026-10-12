@@ -1,4 +1,4 @@
-/**
+/*
  * Tabela: ordem_servico_status_auditoria
  *
  * Descrição:

@@ -1,9 +1,13 @@
--- ===================================================
--- TABELA: ordem_servico_tecnico_auditoria
--- Descrição: Registra as alterações de técnico responsável
---            por uma ordem de serviço.
--- Dependências: ordem_servico, usuario
--- ===================================================
+/*
+ * Tabela: ordem_servico_tecnico_auditoria
+ *
+ * Descrição:
+ * Registra as alterações de técnico responsável por uma ordem de serviço.
+ *
+ * Dependências:
+ * - ordem_servico
+ * - usuario
+ */
 
 CREATE TABLE ordem_servico_tecnico_auditoria (
     id                  SERIAL PRIMARY KEY,
