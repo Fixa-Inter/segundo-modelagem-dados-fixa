@@ -2,8 +2,7 @@
  * Tabela: problema
  *
  * Descrição:
- * Registra problemas identificados na instituição, incluindo sua
- * categoria, localização, descrição e situação de aprovação.
+ * Registra problemas identificados nas instituições.
  *
  * Dependências:
  * - usuario
@@ -11,7 +10,7 @@
  * - local_endereco
  */
 
-CREATE TABLE problema(
+CREATE TABLE problema (
     id                       SERIAL PRIMARY KEY,
     usuario_id               INTEGER NOT NULL REFERENCES usuario(id),
     categoria_equipamento_id INTEGER NOT NULL REFERENCES categoria_equipamento(id),
@@ -21,12 +20,11 @@ CREATE TABLE problema(
     descricao_local          VARCHAR(255) NOT NULL,
     motivo_recusa            VARCHAR(255),
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    status                   INTEGER NOT NULL DEFAULT 0, -- 0 = Pendente, 1 = Aprovado, 2 = Reprovado
-
-    CONSTRAINT ck_motivo_recusa_status_recusado
-        CHECK (
-            (status = 2 AND motivo_recusa IS NOT NULL)
-            OR
-            (status <> 2 AND motivo_recusa IS NULL)
-        )
+    status                   INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT ck_status_problema_0_a_2 CHECK (status BETWEEN 0 AND 2),
+    CONSTRAINT ck_motivo_recusa_status_recusado CHECK (
+        (status = 2 AND motivo_recusa IS NOT NULL)
+        OR
+        (status <> 2 AND motivo_recusa IS NULL)
+    )
 );
