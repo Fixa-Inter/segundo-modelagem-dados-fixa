@@ -81,7 +81,9 @@
 
 \echo '3. Criando procedures...'
 
--- \ir ../database/procedures/nome_procedure.sql
+\ir ../database/procedures/cadastrar_problema.sql
+\ir ../database/procedures/registrar_ocorrencia.sql
+\ir ../database/procedures/registrar_observacao_conclusao.sql
 
 
 -- ===================================================
