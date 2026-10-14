@@ -48,6 +48,11 @@
 \ir ../database/tabelas/ordem_servico_status_auditoria.sql
 \ir ../database/tabelas/ordem_servico_tecnico_auditoria.sql
 
+-- AUDITORIAS COMPLETAS
+\ir ../database/tabelas/pagamento_auditoria.sql
+\ir ../database/tabelas/problema_auditoria.sql
+\ir ../database/tabelas/usuario_auditoria.sql
+
 -- TAREFAS
 \ir ../database/tabelas/tarefa.sql
 
@@ -88,6 +93,9 @@
 
 \ir ../database/triggers/auditar_status_ordem_servico.sql
 \ir ../database/triggers/auditar_tecnico_ordem_servico.sql
+\ir ../database/triggers/auditoria_pagamento.sql
+\ir ../database/triggers/auditoria_problema.sql
+\ir ../database/triggers/auditoria_usuario.sql
 
 
 -- ===================================================
