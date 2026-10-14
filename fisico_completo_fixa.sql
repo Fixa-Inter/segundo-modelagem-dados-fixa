@@ -342,7 +342,7 @@ CREATE TABLE ordem_servico (
     id                       SERIAL PRIMARY KEY,
     problema_id              INTEGER NOT NULL UNIQUE REFERENCES problema(id),
     usuario_id               INTEGER NOT NULL REFERENCES usuario(id),
-    status_ordem_servico                   INTEGER NOT NULL DEFAULT 0,
+    status_ordem_servico     INTEGER NOT NULL DEFAULT 0,
     categoria_problema       INTEGER NOT NULL,
     data_prevista            TIMESTAMP NOT NULL,
     prioridade               INTEGER NOT NULL,
@@ -397,7 +397,7 @@ CREATE TABLE ordem_servico_tecnico_auditoria (
 CREATE TABLE tarefa (
     id                       SERIAL PRIMARY KEY,
     ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
-    status_ordem_servico                   INTEGER NOT NULL DEFAULT 0,
+    status_ordem_servico     INTEGER NOT NULL DEFAULT 0,
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
