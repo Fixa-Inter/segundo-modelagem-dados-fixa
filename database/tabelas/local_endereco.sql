@@ -2,15 +2,15 @@
  * Tabela: local_endereco
  *
  * Descrição:
- * Representa locais específicos dentro dos endereços.
+ * Representa locais específicos dentro das unidades.
  *
  * Dependências:
- * - endereco
+ * - unidade
  */
 
 CREATE TABLE local_endereco (
     id                   SERIAL PRIMARY KEY,
-    endereco_id          INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id          INTEGER NOT NULL REFERENCES unidade(id),
     nome                 VARCHAR(100) NOT NULL,
     tipo_local_endereco  INTEGER NOT NULL,
     descricao            VARCHAR(255) NOT NULL,

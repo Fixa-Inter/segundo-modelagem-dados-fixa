@@ -2,17 +2,17 @@
  * Tabela: contrato
  *
  * Descrição:
- * Registra os contratos vinculados aos endereços das instituições.
+ * Registra os contratos vinculados às unidades das instituições.
  *
  * Dependências:
  * - plano
- * - endereco
+ * - unidade
  */
 
 CREATE TABLE contrato (
     id            SERIAL PRIMARY KEY,
     plano_id      INTEGER NOT NULL REFERENCES plano(id),
-    endereco_id   INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id   INTEGER NOT NULL REFERENCES unidade(id),
     data_inicio   DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim      DATE NOT NULL,
     status        INTEGER NOT NULL DEFAULT 1,

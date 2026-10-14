@@ -15,7 +15,7 @@ SELECT
     u.nome_completo,
     u.email,
     u.cargo,
-    u.endereco_id,
+    u.unidade_id,
     u.esta_ativo
 FROM usuario u
 WHERE u.tipo_acesso = 3;

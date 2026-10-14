@@ -1,17 +1,17 @@
 /**
- * Tabela: dim_endereco
+ * Tabela: dim_unidade
  *
  * Descrição:
- * Disponibiliza os endereços das instituições para análise,
+ * Disponibiliza as unidades das instituições para análise,
  * representando a unidade de atuação dos gestores.
  *
  * Dependências:
- * - endereco
+ * - unidade
  */
 
-CREATE OR REPLACE VIEW dim_endereco AS
+CREATE OR REPLACE VIEW dim_unidade AS
 SELECT
-    e.id AS endereco_id,
+    e.id AS unidade_id,
     e.instituicao_id,
     e.cnpj,
     e.logradouro,
@@ -21,5 +21,6 @@ SELECT
     e.cidade,
     e.estado,
     e.cep,
-    e.esta_ativo
-FROM endereco e;
+    e.esta_ativo,
+    e.nome
+FROM unidade e;

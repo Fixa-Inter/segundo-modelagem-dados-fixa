@@ -19,7 +19,7 @@ Este documento apresenta os padrões de modelagem de banco de dados adotados no 
 | **Correto** | **Incorreto**       |
 |-------------|---------------------|
 | `usuario`   | `usuarios`, `tbl_usuario` |
-| `endereco`  | `Endereco`, `end`   |
+| `unidade`  | `Unidade`, `uni`   |
 
 ---
 
@@ -87,7 +87,7 @@ Este documento apresenta os padrões de modelagem de banco de dados adotados no 
 ### **Regra**
 - Use o padrão: **nome_da_tabela_id**.
 
-| **Tabela**: `endereco` | **Correto** | **Incorreto**       |
+| **Tabela**: `unidade` | **Correto** | **Incorreto**       |
 |------------------------|-------------|---------------------|
 | Chave estrangeira      | `usuario_id` | `id_usuario`, `fk_usuario` |
 

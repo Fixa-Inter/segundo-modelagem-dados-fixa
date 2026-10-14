@@ -6,56 +6,57 @@ de chaves nem tabelas físicas de Data Warehouse.
 
 ## Hierarquia e escopo do gestor
 
-A organização analítica é instituição → endereço → local. Cada gestor
-possui um endereço em `usuario.endereco_id`, que define a unidade de análise
+A organização analítica é instituição → unidade → local. Cada gestor
+possui uma unidade em `usuario.unidade_id`, que define a unidade de análise
 para os problemas, ocorrências, ordens de serviço e técnicos.
 
-O BI pode filtrar as três fatos por `fato.endereco_id = gestor.endereco_id`.
+O BI pode filtrar as três fatos por `fato.unidade_id = gestor.unidade_id`.
 A exposição dessa coluna permite aplicar o filtro; as views não implementam
 autenticação nem Row Level Security.
 
 A instituição é alcançada pela sequência:
 
 ```text
-fato.endereco_id → dim_endereco.endereco_id
-                → dim_endereco.instituicao_id → dim_instituicao.instituicao_id
+fato.unidade_id → dim_unidade.unidade_id
+                → dim_unidade.instituicao_id → dim_instituicao.instituicao_id
 
-dim_local.endereco_id → dim_endereco.endereco_id
+dim_local.unidade_id → dim_unidade.unidade_id
 
-dim_tecnico.endereco_id → dim_endereco.endereco_id
+dim_tecnico.unidade_id → dim_unidade.unidade_id
 ```
 
 A instituição permanece disponível para análises administrativas. As três
-fatos expõem apenas `endereco_id` e `local_id` para a localização do registro,
-sem chave direta de instituição. O endereço vem sempre do local do problema
+fatos expõem apenas `unidade_id` e `local_id` para a localização do registro,
+sem chave direta de instituição. A unidade vem sempre do local do problema
 ou da ocorrência, inclusive na OS vinculada a um problema.
 
 | Dimensão | Chave | Origem |
 | --- | --- | --- |
 | dim_tecnico | tecnico_id | usuario.id, com tipo_acesso = 3 |
 | dim_instituicao | instituicao_id | instituicao.id |
-| dim_endereco | endereco_id | endereco.id |
+| dim_unidade | unidade_id | unidade.id |
 | dim_local | local_id | local_endereco.id |
 | dim_categoria_problema | categoria_problema_id | Códigos oficiais de 1 a 10 |
 | dim_categoria_equipamento | categoria_equipamento_id | categoria_equipamento.id |
-| dim_status_ordem_servico | status_id | status_ordem_servico.id |
+| dim_status_ordem_servico | status_id | Valores fixos oficiais de 0 a 4 |
 | dim_status_problema | status_problema_id | problema.status, de 0 a 2 |
 | dim_tempo | data_id | Data no formato inteiro YYYYMMDD |
 
-`dim_endereco` contém `endereco_id`, `instituicao_id`, `cnpj`, `logradouro`,
-`numero`, `complemento`, `bairro`, `cidade`, `estado`, `cep` e `esta_ativo`.
+`dim_unidade` contém `unidade_id`, `instituicao_id`, `cnpj`, `logradouro`,
+`numero`, `complemento`, `bairro`, `cidade`, `estado`, `cep`, `esta_ativo` e `nome`.
+O nome da unidade é obrigatório e possui até 100 caracteres.
 
-`dim_local` contém somente `local_id`, `endereco_id`, `nome_local`,
+`dim_local` contém somente `local_id`, `unidade_id`, `nome_local`,
 `tipo_local`, `descricao` e `esta_ativo`. Os campos `logradouro`, `numero`,
 `bairro`, `cidade`, `estado` e `cep` passaram a ser expostos na dimensão de
-endereço. O código numérico `tipo_local_endereco` não é mais exposto na
+unidade. O código numérico `tipo_local_endereco` não é mais exposto na
 view de local; a tradução oficial em `tipo_local` foi preservada.
 
 | Fato | Grão | Referências às dimensões |
 | --- | --- | --- |
-| fato_ordem_servico | Uma linha por ordem_servico_id | tecnico_id, status_id, categoria_problema_id, endereco_id, local_id, data_criacao_id, data_prevista_id, data_inicio_id, data_conclusao_id |
-| fato_problema | Uma linha por problema_id | endereco_id, local_id, categoria_equipamento_id, status_problema_id, data_criacao_id |
-| fato_ocorrencia | Uma linha por ocorrencia_id | tecnico_id, endereco_id, local_id, categoria_problema_id, categoria_equipamento_id, data_criacao_id |
+| fato_ordem_servico | Uma linha por ordem_servico_id | tecnico_id, status_id, categoria_problema_id, unidade_id, local_id, data_criacao_id, data_prevista_id, data_inicio_id, data_conclusao_id |
+| fato_problema | Uma linha por problema_id | unidade_id, local_id, categoria_equipamento_id, status_problema_id, data_criacao_id |
+| fato_ocorrencia | Uma linha por ocorrencia_id | tecnico_id, unidade_id, local_id, categoria_problema_id, categoria_equipamento_id, data_criacao_id |
 
 Os códigos e descrições oficiais permanecem disponíveis nas dimensões;
 as fatos de OS e ocorrência mantêm `prioridade` e `prioridade_nome`.
@@ -66,10 +67,10 @@ pela validação de relacionamentos.
 
 ## Criação e atualização
 
-Para bancos novos, `scripts/criar_banco.sql` inclui `dim_endereco` entre
+Para bancos novos, `scripts/criar_banco.sql` inclui `dim_unidade` entre
 `dim_instituicao` e `dim_local`. As demais etapas do fluxo são preservadas.
 
-Para atualizar um banco que já possui as views:
+Para recriar as views de um banco cujas tabelas operacionais já usam o novo modelo:
 
 ```sh
 psql -d fixa -f scripts/atualizar_views.sql
@@ -77,8 +78,8 @@ psql -d fixa -f scripts/validar_views.sql
 ```
 
 A atualização recria as doze views em uma transação. A remoção segue
-fatos → local → endereço → instituição; a recriação segue
-instituição → endereço → local, antes das fatos. As dimensões consultam
+fatos → local → unidade → instituição; a recriação segue
+instituição → unidade → local, antes das fatos. As dimensões consultam
 as tabelas operacionais diretamente.
 
 `CREATE OR REPLACE VIEW` não permite remover colunas nem renomear as colunas
@@ -86,21 +87,43 @@ existentes dessa forma. O script não utiliza `CASCADE`: se houver views
 externas dependentes, a operação falha e a transação não é aplicada.
 As permissões específicas e os proprietários das views recriadas precisam
 ser reaplicados quando diferirem dos padrões do usuário executor.
-Os consumidores devem passar a usar `endereco_id` nas três fatos.
+Os consumidores devem passar a usar `unidade_id` nas três fatos.
 
 ## Validação
 
 `scripts/validar_views.sql` consulta todas as dimensões e fatos, verifica
 duplicidade dos três grãos, compara contagens com as tabelas operacionais
 e verifica vinte relações entre fatos e dimensões, incluindo datas.
-Também verifica endereço → instituição, local → endereço e técnico → endereço,
-a coerência endereço/local em cada fato e o filtro pelo endereço do gestor.
-As consultas de inconsistência devem retornar zero linhas. Datas opcionais
+Também verifica unidade → instituição, local → unidade e técnico → unidade,
+a coerência unidade/local em cada fato e o filtro pela unidade do gestor.
+As consultas de integridade devem retornar zero linhas. O relatório de
+divergências entre status e prazo pode retornar linhas para análise de negócio.
+Datas opcionais
 nulas não contam como referências inválidas.
 
-Os cálculos de OS aberta e atrasada, finalizações, reaberturas,
-reatribuições, tarefas, tempos e problemas que geraram OS preservam as
-expressões originais. As CTEs e a função de janela da OS não foram alteradas.
+Os campos ordem_servico.status_ordem_servico e tarefa.status_ordem_servico
+são inteiros de 0 a 4, com default 0 e CHECK.
+A auditoria registra status_anterior e status_novo sem FKs de status.
+A dimensão de status usa VALUES e preserva nome, descrição e flags.
+
+OS abertas incluem Atrasada (1), Pausada (2) e Em Andamento (3). Não
+iniciadas (0) seguem fora da flag de abertura, como na regra anterior.
+O indicador esta_atrasada mantém a métrica por prazo: OS aberta com
+data_prevista < NOW(). Ele não é sinônimo de status_ordem_servico = 1. A validação
+reporta as divergências para decisão de negócio, sem sincronizar os estados.
+Reabertura é qualquer transição de Finalizadas (4) para um estado não final
+(0, 1, 2, 3). Início e tempo pausado usam os códigos 3 e 2, respectivamente.
+Tarefas mantêm estados independentes; a carga apenas cria cenários coerentes.
+
+A carga mantém o volume das tabelas preservadas, inclusive 249 transições,
+e representa os cinco status. Remove somente os quatro registros do antigo
+cadastro de status. O RPA grava unidade e unidade_id no destino, mantendo
+os nomes de origem do banco legado.
+
+Não havia arquivo DBML no checkout. A modelagem física e dimensional
+atual está documentada em database/modelagem_fixa.dbml.
+O script de atualização de views não migra dados ou tabelas operacionais
+de bancos antigos; scripts/criar_banco.sql é para um banco vazio.
 
 ## Resultado da revisão de hierarquia em 12/10/2026
 

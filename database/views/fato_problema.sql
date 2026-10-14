@@ -3,7 +3,7 @@
  *
  * Descrição:
  * Centraliza as informações dos problemas registrados
- * para indicadores e análises por endereço e local.
+ * para indicadores e análises por unidade e local.
  * Uma linha representa um problema registrado.
  *
  * Dependências:
@@ -16,7 +16,7 @@ CREATE OR REPLACE VIEW fato_problema AS
 SELECT
     p.id AS problema_id,
     p.usuario_id AS solicitante_id,
-    le.endereco_id AS endereco_id,
+    le.unidade_id AS unidade_id,
     p.local_endereco_id AS local_id,
     p.categoria_equipamento_id AS categoria_equipamento_id,
     p.status AS status_problema_id,

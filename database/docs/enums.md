@@ -67,9 +67,9 @@
   1 = Média
   2 = Baixa
 
-- status_ordem_servico:
-  Não há enum, mas a tabela possui valores fixos:
-  - Não iniciadas
-  - Em andamento
-  - Pausadas
-  - Finalizadas
+- ordem_servico.status_ordem_servico e tarefa.status_ordem_servico (independentes):
+  0 = Não iniciadas
+  1 = Atrasada
+  2 = Pausada
+  3 = Em Andamento
+  4 = Finalizadas

@@ -2,16 +2,16 @@
  * Tabela: turno
  *
  * Descrição:
- * Define os turnos de funcionamento associados aos endereços
+ * Define os turnos de funcionamento associados às unidades
  * das instituições, incluindo horários de início e término.
  *
  * Dependências:
- * - endereco
+ * - unidade
  */
 
 CREATE TABLE turno(
     id                   SERIAL PRIMARY KEY,
-    endereco_id    INTEGER REFERENCES endereco(id) NOT NULL,
+    unidade_id    INTEGER REFERENCES unidade(id) NOT NULL,
     nome                 VARCHAR(100) NOT NULL,
     hora_inicio          INTEGER NOT NULL,
     hora_fim             INTEGER NOT NULL,

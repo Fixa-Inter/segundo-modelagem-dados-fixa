@@ -3,7 +3,7 @@
 -- Requisito: carga inicial de pelo menos 500 registros
 --            verossímeis para testes de volume.
 --
--- Total aproximado gerado: 2.710 registros.
+-- Total aproximado gerado: 2.706 registros.
 -- Execução esperada: banco recém-criado e vazio.
 --
 -- Senha padrão de TODOS os usuários e super admins: 1234
@@ -33,9 +33,8 @@
 --   1=Fácil, 2=Médio, 3=Difícil
 -- ocorrencia.prioridade / ordem_servico.prioridade:
 --   0=Alta, 1=Média, 2=Baixa
--- status_ordem_servico (IDs fixos neste dataload):
---   1=Não iniciadas, 2=Em andamento, 3=Pausadas, 4=Finalizadas
--- tarefa.status_ordem_servico_id reutiliza esses quatro status.
+-- ordem_servico.status_ordem_servico e tarefa.status_ordem_servico (independentes):
+--   0=Não iniciadas, 1=Atrasada, 2=Pausada, 3=Em Andamento, 4=Finalizadas
 -- Os IDs e as distribuições são determinísticos; as datas são relativas
 -- ao início da transação, preservando cenários atuais para os KPIs.
 -- ===================================================
@@ -73,15 +72,16 @@ SELECT
 FROM generate_series(1, 12) AS n;
 
 -- ===================================================
--- 3. ENDEREÇO (24) - 2 unidades por instituição
+-- 3. UNIDADE (24) - 2 unidades por instituição
 -- ===================================================
-INSERT INTO endereco (
-    id, instituicao_id, cnpj, logradouro, numero, complemento,
+INSERT INTO unidade (
+    id, instituicao_id, nome, cnpj, logradouro, numero, complemento,
     bairro, cidade, estado, cep, data_criacao, esta_ativo
 )
 SELECT
     n,
     ((n - 1) / 2) + 1,
+    'Unidade ' || n,
     LPAD((12000000000000 + n * 7919)::TEXT, 14, '0'),
     (ARRAY[
         'Rua das Acácias', 'Avenida Paulista', 'Rua Sete de Setembro',
@@ -108,10 +108,10 @@ INSERT INTO plano (id, nome, valor, descricao, duracao_meses, data_criacao, esta
 (4, 'Enterprise',   6490.00, 'Operação completa com maior escala e suporte.', 24, NOW() - INTERVAL '400 days', TRUE);
 
 -- ===================================================
--- 5. CONTRATOS (24) - 1 por endereço
+-- 5. CONTRATOS (24) - 1 por unidade
 -- ===================================================
 INSERT INTO contrato (
-    id, plano_id, endereco_id, data_inicio, data_fim, status, data_criacao
+    id, plano_id, unidade_id, data_inicio, data_fim, status, data_criacao
 )
 SELECT
     n,
@@ -152,11 +152,11 @@ JOIN plano p ON p.id = c.plano_id
 CROSS JOIN generate_series(1, 3) AS parcela;
 
 -- ===================================================
--- 7. USUÁRIOS (144) - 6 por endereço
+-- 7. USUÁRIOS (144) - 6 por unidade
 -- 1 Administrador, 1 Gestor, 2 Técnicos e 2 Solicitantes
 -- ===================================================
 INSERT INTO usuario (
-    id, endereco_id, nome_completo, email, tipo_acesso, senha_hash,
+    id, unidade_id, nome_completo, email, tipo_acesso, senha_hash,
     cargo, data_nascimento, data_criacao, esta_ativo, primeiro_acesso
 )
 SELECT
@@ -197,7 +197,7 @@ SELECT
     TRUE,
     FALSE
 FROM generate_series(1, 144) AS n
-JOIN endereco e ON e.id = ((n - 1) / 6) + 1;
+JOIN unidade e ON e.id = ((n - 1) / 6) + 1;
 
 -- ===================================================
 -- 8. APTIDÕES (144) - 3 por técnico
@@ -239,10 +239,10 @@ SELECT
 FROM generate_series(1, 60) AS n;
 
 -- ===================================================
--- 10. LOCAIS DOS ENDEREÇOS (144) - 6 por endereço
+-- 10. LOCAIS DAS UNIDADES (144) - 6 por unidade
 -- ===================================================
 INSERT INTO local_endereco (
-    id, endereco_id, nome, tipo_local_endereco,
+    id, unidade_id, nome, tipo_local_endereco,
     descricao, data_criacao, esta_ativo
 )
 SELECT
@@ -340,7 +340,7 @@ INSERT INTO equipamento (
 )
 SELECT
     n,
-    ((((l.endereco_id - 1) * 6) + 2)),
+    ((((l.unidade_id - 1) * 6) + 2)),
     ((n - 1) % 30) + 1,
     l.id,
     'EQP-' || LPAD(n::TEXT, 5, '0'),
@@ -360,7 +360,7 @@ INSERT INTO problema (
 )
 SELECT
     n,
-    ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END,
+    ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END,
     ((n - 1) % 10) + 1,
     l.id,
     (ARRAY[
@@ -383,7 +383,7 @@ SELECT
     END
 FROM generate_series(1, 240) AS n
 JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
-JOIN usuario u ON u.id = ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END;
+JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END;
 
 -- ===================================================
 -- 17. OCORRÊNCIAS (100)
@@ -395,7 +395,7 @@ INSERT INTO ocorrencia (
 )
 SELECT
     n,
-    ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END,
+    ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END,
     l.id,
     ((n - 1) % 10) + 1,
     ((n - 1) % 10) + 1,
@@ -411,32 +411,24 @@ SELECT
     TRUE
 FROM generate_series(1, 100) AS n
 JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
-JOIN usuario u ON u.id = ((l.endereco_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END;
-
--- ===================================================
--- 18. STATUS FIXOS DA ORDEM DE SERVIÇO (4)
--- ===================================================
-INSERT INTO status_ordem_servico (id, nome, descricao) VALUES
-(1, 'Não iniciadas', 'Ordem de serviço criada, mas ainda não iniciada.'),
-(2, 'Em andamento',  'Ordem de serviço em execução por um técnico.'),
-(3, 'Pausadas',      'Ordem de serviço temporariamente pausada.'),
-(4, 'Finalizadas',   'Ordem de serviço finalizada pelo técnico responsável.');
+JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END;
 
 -- ===================================================
 -- 19. ORDENS DE SERVIÇO (160)
 -- Somente problemas aprovados geram OS.
 -- Distribuição de status:
--- 40 Não iniciadas | 45 Em andamento | 25 Pausadas | 50 Finalizadas
+-- 40 Não iniciadas | 10 Atrasada | 15 Pausada | 45 Em Andamento | 50 Finalizadas
 -- ===================================================
 WITH base AS (
     SELECT
         p.id AS n,
         p.id AS problema_id,
-        l.endereco_id,
+        l.unidade_id,
         CASE
-            WHEN p.id <= 40 THEN 1
-            WHEN p.id <= 85 THEN 2
-            WHEN p.id <= 110 THEN 3
+            WHEN p.id <= 40 THEN 0
+            WHEN p.id <= 85 THEN 3
+            WHEN p.id <= 100 THEN 2
+            WHEN p.id <= 110 THEN 1
             ELSE 4
         END AS status_id,
         GREATEST(
@@ -453,24 +445,24 @@ WITH base AS (
     WHERE p.id <= 160 AND p.status = 1
 )
 INSERT INTO ordem_servico (
-    id, problema_id, usuario_id, status_ordem_servico_id,
+    id, problema_id, usuario_id, status_ordem_servico,
     categoria_problema, data_prevista, prioridade, data_criacao
 )
 SELECT
     n,
     problema_id,
     CASE
-        WHEN n BETWEEN 41 AND 64 THEN ((endereco_id - 1) * 6) + 4
-        WHEN n BETWEEN 65 AND 72 THEN ((endereco_id - 1) * 6) + 3
-        WHEN n % 2 = 0 THEN ((endereco_id - 1) * 6) + 3
-        ELSE ((endereco_id - 1) * 6) + 4
+        WHEN n BETWEEN 41 AND 64 THEN ((unidade_id - 1) * 6) + 4
+        WHEN n BETWEEN 65 AND 72 THEN ((unidade_id - 1) * 6) + 3
+        WHEN n % 2 = 0 THEN ((unidade_id - 1) * 6) + 3
+        ELSE ((unidade_id - 1) * 6) + 4
     END,
     status_id,
     ((n - 1) % 10) + 1,
     criada_em + CASE
-        WHEN status_id = 1 THEN INTERVAL '7 days'
-        WHEN status_id = 2 THEN INTERVAL '12 days'
-        WHEN status_id = 3 THEN INTERVAL '15 days'
+        WHEN status_id = 0 THEN INTERVAL '7 days'
+        WHEN status_id = 3 THEN INTERVAL '12 days'
+        WHEN status_id IN (1, 2) THEN INTERVAL '15 days'
         ELSE INTERVAL '8 days'
     END,
     (n - 1) % 3,
@@ -486,85 +478,88 @@ FROM base;
 
 -- Entrada em andamento.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    1,
-    2,
+    0,
+    3,
     os.data_criacao + ((4 + (os.id % 8)) || ' hours')::INTERVAL
 FROM ordem_servico os
-WHERE os.status_ordem_servico_id IN (2, 3, 4);
+WHERE os.status_ordem_servico IN (1, 2, 3, 4);
 
--- Pausa das OS atualmente pausadas.
+-- Transição para Pausada ou Atrasada; mantém o volume histórico.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    2,
     3,
-    os.data_criacao + INTERVAL '2 days'
+    os.status_ordem_servico,
+    CASE
+        WHEN os.status_ordem_servico = 1 THEN os.data_prevista + INTERVAL '1 hour'
+        ELSE os.data_criacao + INTERVAL '2 days'
+    END
 FROM ordem_servico os
-WHERE os.status_ordem_servico_id = 3;
+WHERE os.status_ordem_servico IN (1, 2);
 
 -- Pausas históricas em parte das OS finalizadas.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    2,
     3,
+    2,
     os.data_criacao + INTERVAL '2 days'
 FROM ordem_servico os
-WHERE os.status_ordem_servico_id = 4
+WHERE os.status_ordem_servico = 4
   AND os.id % 3 = 0;
 
 -- Retorno das pausas históricas.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    3,
     2,
+    3,
     os.data_criacao + INTERVAL '2 days 6 hours'
 FROM ordem_servico os
-WHERE os.status_ordem_servico_id = 4
+WHERE os.status_ordem_servico = 4
   AND os.id % 3 = 0;
 
 -- Primeira conclusão das OS finalizadas.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    2,
+    3,
     4,
     os.data_criacao + ((4 + (os.id % 8)) || ' days')::INTERVAL
 FROM ordem_servico os
-WHERE os.status_ordem_servico_id = 4;
+WHERE os.status_ordem_servico = 4;
 
 -- Reabertura de 10 OS finalizadas.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
     4,
-    2,
+    3,
     os.data_criacao + ((5 + (os.id % 8)) || ' days')::INTERVAL
 FROM ordem_servico os
 WHERE os.id BETWEEN 111 AND 120;
 
 -- Nova finalização após reabertura.
 INSERT INTO ordem_servico_status_auditoria (
-    ordem_servico_id, status_anterior_id, status_novo_id, data_alteracao
+    ordem_servico_id, status_anterior, status_novo, data_alteracao
 )
 SELECT
     os.id,
-    2,
+    3,
     4,
     os.data_criacao + ((6 + (os.id % 8)) || ' days')::INTERVAL
 FROM ordem_servico os
@@ -581,8 +576,8 @@ INSERT INTO ordem_servico_tecnico_auditoria (
 )
 SELECT
     os.id,
-    ((l.endereco_id - 1) * 6) + 3,
-    ((l.endereco_id - 1) * 6) + 4,
+    ((l.unidade_id - 1) * 6) + 3,
+    ((l.unidade_id - 1) * 6) + 4,
     os.data_criacao + INTERVAL '6 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
@@ -595,8 +590,8 @@ INSERT INTO ordem_servico_tecnico_auditoria (
 )
 SELECT
     os.id,
-    ((l.endereco_id - 1) * 6) + 3,
-    ((l.endereco_id - 1) * 6) + 4,
+    ((l.unidade_id - 1) * 6) + 3,
+    ((l.unidade_id - 1) * 6) + 4,
     os.data_criacao + INTERVAL '4 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
@@ -608,8 +603,8 @@ INSERT INTO ordem_servico_tecnico_auditoria (
 )
 SELECT
     os.id,
-    ((l.endereco_id - 1) * 6) + 4,
-    ((l.endereco_id - 1) * 6) + 3,
+    ((l.unidade_id - 1) * 6) + 4,
+    ((l.unidade_id - 1) * 6) + 3,
     os.data_criacao + INTERVAL '10 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
@@ -619,22 +614,22 @@ WHERE os.id BETWEEN 65 AND 72;
 -- ===================================================
 -- 22. TAREFAS (480) - 3 por OS
 -- Kanban próprio: diagnóstico, execução e validação têm estados distintos.
--- OS não iniciadas: 1/1/1; em andamento: 4/2/1; pausadas: 4/3/1;
--- finalizadas: 4/4/4.
+-- OS não iniciadas: 0/0/0; Em Andamento: 4/3/0; Pausada: 4/2/0;
+-- Atrasada: 4/1/0; Finalizadas: 4/4/4. Estados próprios em cada tarefa.
 -- ===================================================
 INSERT INTO tarefa (
-    id, ordem_servico_id, status_ordem_servico_id,
+    id, ordem_servico_id, status_ordem_servico,
     titulo, descricao, data_criacao
 )
 SELECT
     ((os.id - 1) * 3) + etapa,
     os.id,
     CASE
-        WHEN os.status_ordem_servico_id = 1 THEN 1
-        WHEN os.status_ordem_servico_id = 4 THEN 4
+        WHEN os.status_ordem_servico = 0 THEN 0
+        WHEN os.status_ordem_servico = 4 THEN 4
         WHEN etapa = 1 THEN 4
-        WHEN etapa = 2 THEN os.status_ordem_servico_id
-        ELSE 1
+        WHEN etapa = 2 THEN os.status_ordem_servico
+        ELSE 0
     END,
     CASE etapa
         WHEN 1 THEN 'Diagnosticar problema'
@@ -670,8 +665,8 @@ SELECT
 FROM ordem_servico os
 JOIN ordem_servico_status_auditoria a
     ON a.ordem_servico_id = os.id
-   AND a.status_novo_id = 4
-WHERE os.status_ordem_servico_id = 4
+   AND a.status_novo = 4
+WHERE os.status_ordem_servico = 4
 GROUP BY os.id;
 
 -- ===================================================
@@ -744,10 +739,10 @@ FROM generate_series(1, 50) AS n
 JOIN observacao_conclusao oc ON oc.id = n;
 
 -- ===================================================
--- 25. TURNOS (48) - manhã e tarde por endereço
+-- 25. TURNOS (48) - manhã e tarde por unidade
 -- ===================================================
 INSERT INTO turno (
-    id, endereco_id, nome, hora_inicio, hora_fim,
+    id, unidade_id, nome, hora_inicio, hora_fim,
     atravessa_meia_noite, data_criacao, esta_ativo
 )
 SELECT
@@ -759,7 +754,7 @@ SELECT
     FALSE,
     e.data_criacao + INTERVAL '1 day',
     TRUE
-FROM endereco e
+FROM unidade e
 CROSS JOIN generate_series(1, 2) AS g;
 
 -- ===================================================
@@ -770,7 +765,7 @@ INSERT INTO turno_usuario (
 )
 SELECT
     u.id,
-    ((u.endereco_id - 1) * 2) + CASE WHEN ((u.id - 1) % 6) IN (0, 2, 4) THEN 1 ELSE 2 END,
+    ((u.unidade_id - 1) * 2) + CASE WHEN ((u.id - 1) % 6) IN (0, 2, 4) THEN 1 ELSE 2 END,
     u.id,
     u.data_criacao + INTERVAL '2 days',
     TRUE
@@ -783,7 +778,7 @@ FROM usuario u;
 -- ===================================================
 SELECT setval(pg_get_serial_sequence('super_admin', 'id'), MAX(id), TRUE) FROM super_admin;
 SELECT setval(pg_get_serial_sequence('instituicao', 'id'), MAX(id), TRUE) FROM instituicao;
-SELECT setval(pg_get_serial_sequence('endereco', 'id'), MAX(id), TRUE) FROM endereco;
+SELECT setval(pg_get_serial_sequence('unidade', 'id'), MAX(id), TRUE) FROM unidade;
 SELECT setval(pg_get_serial_sequence('plano', 'id'), MAX(id), TRUE) FROM plano;
 SELECT setval(pg_get_serial_sequence('contrato', 'id'), MAX(id), TRUE) FROM contrato;
 SELECT setval(pg_get_serial_sequence('pagamento', 'id'), MAX(id), TRUE) FROM pagamento;
@@ -798,7 +793,6 @@ SELECT setval(pg_get_serial_sequence('modelo_equipamento', 'id'), MAX(id), TRUE)
 SELECT setval(pg_get_serial_sequence('equipamento', 'id'), MAX(id), TRUE) FROM equipamento;
 SELECT setval(pg_get_serial_sequence('problema', 'id'), MAX(id), TRUE) FROM problema;
 SELECT setval(pg_get_serial_sequence('ocorrencia', 'id'), MAX(id), TRUE) FROM ocorrencia;
-SELECT setval(pg_get_serial_sequence('status_ordem_servico', 'id'), MAX(id), TRUE) FROM status_ordem_servico;
 SELECT setval(pg_get_serial_sequence('ordem_servico', 'id'), MAX(id), TRUE) FROM ordem_servico;
 SELECT setval(pg_get_serial_sequence('ordem_servico_status_auditoria', 'id'), MAX(id), TRUE) FROM ordem_servico_status_auditoria;
 SELECT setval(pg_get_serial_sequence('ordem_servico_tecnico_auditoria', 'id'), MAX(id), TRUE) FROM ordem_servico_tecnico_auditoria;
@@ -824,7 +818,7 @@ BEGIN
     SELECT
         (SELECT COUNT(*) FROM super_admin) +
         (SELECT COUNT(*) FROM instituicao) +
-        (SELECT COUNT(*) FROM endereco) +
+        (SELECT COUNT(*) FROM unidade) +
         (SELECT COUNT(*) FROM plano) +
         (SELECT COUNT(*) FROM contrato) +
         (SELECT COUNT(*) FROM pagamento) +
@@ -839,7 +833,6 @@ BEGIN
         (SELECT COUNT(*) FROM equipamento) +
         (SELECT COUNT(*) FROM problema) +
         (SELECT COUNT(*) FROM ocorrencia) +
-        (SELECT COUNT(*) FROM status_ordem_servico) +
         (SELECT COUNT(*) FROM ordem_servico) +
         (SELECT COUNT(*) FROM ordem_servico_status_auditoria) +
         (SELECT COUNT(*) FROM ordem_servico_tecnico_auditoria) +
@@ -888,29 +881,35 @@ BEGIN
         RAISE EXCEPTION 'Valor inválido em observacao_conclusao.dificuldade.';
     END IF;
 
+    IF EXISTS (SELECT 1 FROM ordem_servico WHERE status_ordem_servico NOT BETWEEN 0 AND 4)
+       OR EXISTS (SELECT 1 FROM tarefa WHERE status_ordem_servico NOT BETWEEN 0 AND 4)
+       OR EXISTS (SELECT 1 FROM ordem_servico_status_auditoria
+                  WHERE status_anterior NOT BETWEEN 0 AND 4
+                     OR status_novo NOT BETWEEN 0 AND 4) THEN
+        RAISE EXCEPTION 'Status fora do intervalo oficial 0..4.';
+    END IF;
+    IF (SELECT COUNT(DISTINCT status_ordem_servico) FROM ordem_servico) <> 5
+       OR (SELECT COUNT(DISTINCT status_ordem_servico) FROM tarefa) <> 5 THEN
+        RAISE EXCEPTION 'A massa deve representar todos os cinco status oficiais.';
+    END IF;
     IF EXISTS (
-        SELECT 1
-        FROM status_ordem_servico
-        WHERE (id, nome) NOT IN (
-            (1, 'Não iniciadas'),
-            (2, 'Em andamento'),
-            (3, 'Pausadas'),
-            (4, 'Finalizadas')
-        )
-    ) OR (SELECT COUNT(*) FROM status_ordem_servico) <> 4 THEN
-        RAISE EXCEPTION 'Os status fixos da ordem de serviço não correspondem ao padrão definido.';
+        SELECT 1 FROM ordem_servico_status_auditoria a
+        JOIN ordem_servico os ON os.id = a.ordem_servico_id
+        WHERE a.status_novo = 1 AND a.data_alteracao <= os.data_prevista
+    ) THEN
+        RAISE EXCEPTION 'A massa não deve registrar Atrasada antes do prazo previsto.';
     END IF;
 
     -- Confere a massa planejada para detectar perda de dados por JOINs.
     FOR verificacao IN
         SELECT * FROM (VALUES
-            ('super_admin', 3), ('instituicao', 12), ('endereco', 24),
+            ('super_admin', 3), ('instituicao', 12), ('unidade', 24),
             ('plano', 4), ('contrato', 24), ('pagamento', 72),
             ('usuario', 144), ('aptidao', 144), ('feedback', 60),
             ('local_endereco', 144), ('evento', 72),
             ('categoria_equipamento', 10), ('marca_equipamento', 8),
             ('modelo_equipamento', 30), ('equipamento', 144),
-            ('problema', 240), ('ocorrencia', 100), ('status_ordem_servico', 4),
+            ('problema', 240), ('ocorrencia', 100),
             ('ordem_servico', 160), ('ordem_servico_status_auditoria', 249),
             ('ordem_servico_tecnico_auditoria', 40), ('tarefa', 480),
             ('observacao_conclusao', 50), ('foto', 300),
@@ -993,16 +992,15 @@ BEGIN
     -- As tarefas têm estados próprios, respeitando a situação geral da OS.
     IF EXISTS (
         SELECT 1 FROM tarefa t
-        LEFT JOIN status_ordem_servico s ON s.id = t.status_ordem_servico_id
-        WHERE s.id IS NULL OR t.status_ordem_servico_id NOT BETWEEN 1 AND 4
+        WHERE t.status_ordem_servico NOT BETWEEN 0 AND 4
     ) THEN
-        RAISE EXCEPTION 'Tarefa com status inválido ou sem status existente.';
+        RAISE EXCEPTION 'Tarefa com status fora do intervalo 0..4.';
     END IF;
 
     IF EXISTS (
         SELECT 1 FROM tarefa t JOIN ordem_servico os ON os.id = t.ordem_servico_id
-        WHERE (os.status_ordem_servico_id = 4 AND t.status_ordem_servico_id <> 4)
-           OR (os.status_ordem_servico_id = 1 AND t.status_ordem_servico_id <> 1)
+        WHERE (os.status_ordem_servico = 4 AND t.status_ordem_servico <> 4)
+           OR (os.status_ordem_servico = 0 AND t.status_ordem_servico <> 0)
     ) THEN
         RAISE EXCEPTION 'Tarefa incompatível com OS finalizada ou não iniciada.';
     END IF;
@@ -1010,11 +1008,11 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM ordem_servico os
         LEFT JOIN tarefa t ON t.ordem_servico_id = os.id
-        GROUP BY os.id, os.status_ordem_servico_id
+        GROUP BY os.id, os.status_ordem_servico
         HAVING COUNT(t.id) <> 3
-            OR (os.status_ordem_servico_id = 2 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id = 2) = 0)
-            OR (os.status_ordem_servico_id = 2 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id <> 4) = 0)
-            OR (os.status_ordem_servico_id = 3 AND COUNT(*) FILTER (WHERE t.status_ordem_servico_id = 3) = 0)
+            OR (os.status_ordem_servico = 3 AND COUNT(*) FILTER (WHERE t.status_ordem_servico = 3) = 0)
+            OR (os.status_ordem_servico IN (1, 2, 3) AND COUNT(*) FILTER (WHERE t.status_ordem_servico <> 4) = 0)
+            OR (os.status_ordem_servico IN (1, 2) AND COUNT(*) FILTER (WHERE t.status_ordem_servico = os.status_ordem_servico) = 0)
     ) THEN
         RAISE EXCEPTION 'Cada OS deve possuir três tarefas e um kanban coerente com seu andamento.';
     END IF;
@@ -1023,10 +1021,8 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM ordem_servico_status_auditoria a
         JOIN ordem_servico os ON os.id = a.ordem_servico_id
-        LEFT JOIN status_ordem_servico anterior ON anterior.id = a.status_anterior_id
-        LEFT JOIN status_ordem_servico novo ON novo.id = a.status_novo_id
-        WHERE anterior.id IS NULL OR novo.id IS NULL
-           OR a.status_anterior_id = a.status_novo_id
+        WHERE a.status_anterior NOT BETWEEN 0 AND 4 OR a.status_novo NOT BETWEEN 0 AND 4
+           OR a.status_anterior = a.status_novo
            OR a.data_alteracao < os.data_criacao OR a.data_alteracao > NOW()
     ) THEN
         RAISE EXCEPTION 'Auditoria de status com referências ou datas inválidas.';
@@ -1036,12 +1032,12 @@ BEGIN
         SELECT 1 FROM (
             SELECT a.*,
                 ROW_NUMBER() OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS posicao,
-                LAG(status_novo_id) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS status_previo,
+                LAG(status_novo) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS status_previo,
                 LAG(data_alteracao) OVER (PARTITION BY ordem_servico_id ORDER BY data_alteracao, id) AS data_previa
             FROM ordem_servico_status_auditoria a
         ) historico
-        WHERE (posicao = 1 AND status_anterior_id <> 1)
-           OR (posicao > 1 AND status_anterior_id <> status_previo)
+        WHERE (posicao = 1 AND status_anterior <> 0)
+           OR (posicao > 1 AND status_anterior <> status_previo)
            OR (posicao > 1 AND data_alteracao <= data_previa)
     ) THEN
         RAISE EXCEPTION 'Histórico de status descontínuo ou com transições simultâneas.';
@@ -1050,16 +1046,16 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM ordem_servico os
         LEFT JOIN LATERAL (
-            SELECT a.status_novo_id FROM ordem_servico_status_auditoria a
+            SELECT a.status_novo FROM ordem_servico_status_auditoria a
             WHERE a.ordem_servico_id = os.id ORDER BY a.data_alteracao DESC, a.id DESC LIMIT 1
         ) ultima ON TRUE
-        WHERE os.status_ordem_servico_id <> COALESCE(ultima.status_novo_id, 1)
+        WHERE os.status_ordem_servico <> COALESCE(ultima.status_novo, 0)
     ) THEN
         RAISE EXCEPTION 'O status atual da OS diverge da última transição da auditoria.';
     END IF;
 
     IF (SELECT COUNT(DISTINCT ordem_servico_id) FROM ordem_servico_status_auditoria
-        WHERE status_anterior_id = 4 AND status_novo_id IN (2, 3)) <> 10 THEN
+        WHERE status_anterior = 4 AND status_novo IN (0, 1, 2, 3)) <> 10 THEN
         RAISE EXCEPTION 'A massa deve preservar dez OS reabertas.';
     END IF;
 
@@ -1105,14 +1101,14 @@ BEGIN
         LEFT JOIN LATERAL (
             SELECT MAX(data_alteracao) AS data_finalizacao
             FROM ordem_servico_status_auditoria a
-            WHERE a.ordem_servico_id = os.id AND a.status_novo_id = 4
+            WHERE a.ordem_servico_id = os.id AND a.status_novo = 4
         ) ultima ON TRUE
-        WHERE os.status_ordem_servico_id <> 4 OR ultima.data_finalizacao IS NULL
+        WHERE os.status_ordem_servico <> 4 OR ultima.data_finalizacao IS NULL
            OR oc.data_criacao <= ultima.data_finalizacao OR oc.data_criacao > NOW()
     ) OR EXISTS (
         SELECT 1 FROM ordem_servico os
         LEFT JOIN observacao_conclusao oc ON oc.ordem_servico_id = os.id
-        WHERE os.status_ordem_servico_id = 4 GROUP BY os.id HAVING COUNT(oc.id) <> 1
+        WHERE os.status_ordem_servico = 4 GROUP BY os.id HAVING COUNT(oc.id) <> 1
     ) THEN
         RAISE EXCEPTION 'Cada OS finalizada deve ter uma observação posterior à última finalização.';
     END IF;
@@ -1126,10 +1122,10 @@ BEGIN
 
     -- Datas das relações diretas e dos registros operacionais.
     IF EXISTS (
-        SELECT 1 FROM endereco e JOIN instituicao i ON i.id = e.instituicao_id
+        SELECT 1 FROM unidade e JOIN instituicao i ON i.id = e.instituicao_id
         WHERE e.data_criacao < i.data_criacao
     ) OR EXISTS (
-        SELECT 1 FROM usuario u JOIN endereco e ON e.id = u.endereco_id
+        SELECT 1 FROM usuario u JOIN unidade e ON e.id = u.unidade_id
         WHERE u.data_criacao < e.data_criacao
     ) OR EXISTS (
         SELECT 1 FROM problema p
@@ -1148,15 +1144,15 @@ BEGIN
         SELECT 1 FROM tarefa t JOIN ordem_servico os ON os.id = t.ordem_servico_id
         WHERE t.data_criacao < os.data_criacao OR t.data_criacao > NOW()
     ) THEN
-        RAISE EXCEPTION 'Datas incoerentes entre instituição, endereço, usuário, problema, ocorrência, OS ou tarefa.';
+        RAISE EXCEPTION 'Datas incoerentes entre instituição, unidade, usuário, problema, ocorrência, OS ou tarefa.';
     END IF;
 
     IF NOT EXISTS (
         SELECT 1 FROM ordem_servico
-        WHERE status_ordem_servico_id IN (2, 3) AND data_prevista < NOW()
+        WHERE status_ordem_servico IN (1, 2, 3) AND data_prevista < NOW()
     ) OR NOT EXISTS (
         SELECT 1 FROM ordem_servico
-        WHERE status_ordem_servico_id IN (2, 3) AND data_prevista >= NOW()
+        WHERE status_ordem_servico IN (1, 2, 3) AND data_prevista >= NOW()
     ) THEN
         RAISE EXCEPTION 'Os KPIs precisam de OS abertas atrasadas e dentro do prazo.';
     END IF;
@@ -1182,7 +1178,7 @@ COMMIT;
 -- ===================================================
 SELECT 'super_admin' AS tabela, COUNT(*) AS registros FROM super_admin
 UNION ALL SELECT 'instituicao', COUNT(*) FROM instituicao
-UNION ALL SELECT 'endereco', COUNT(*) FROM endereco
+UNION ALL SELECT 'unidade', COUNT(*) FROM unidade
 UNION ALL SELECT 'plano', COUNT(*) FROM plano
 UNION ALL SELECT 'contrato', COUNT(*) FROM contrato
 UNION ALL SELECT 'pagamento', COUNT(*) FROM pagamento
@@ -1197,7 +1193,6 @@ UNION ALL SELECT 'modelo_equipamento', COUNT(*) FROM modelo_equipamento
 UNION ALL SELECT 'equipamento', COUNT(*) FROM equipamento
 UNION ALL SELECT 'problema', COUNT(*) FROM problema
 UNION ALL SELECT 'ocorrencia', COUNT(*) FROM ocorrencia
-UNION ALL SELECT 'status_ordem_servico', COUNT(*) FROM status_ordem_servico
 UNION ALL SELECT 'ordem_servico', COUNT(*) FROM ordem_servico
 UNION ALL SELECT 'ordem_servico_status_auditoria', COUNT(*) FROM ordem_servico_status_auditoria
 UNION ALL SELECT 'ordem_servico_tecnico_auditoria', COUNT(*) FROM ordem_servico_tecnico_auditoria
