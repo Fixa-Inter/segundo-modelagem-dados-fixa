@@ -7,13 +7,14 @@
  *
  * Dependências:
  * - ordem_servico
- * - status_ordem_servico
  */
 
 CREATE TABLE ordem_servico_status_auditoria (
     id SERIAL PRIMARY KEY,
     ordem_servico_id   INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
-    status_anterior_id INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    status_novo_id     INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_alteracao     TIMESTAMP NOT NULL DEFAULT NOW()
+    status_anterior    INTEGER NOT NULL,
+    status_novo        INTEGER NOT NULL,
+    data_alteracao     TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_status_anterior_ordem_servico CHECK (status_anterior BETWEEN 0 AND 4),
+    CONSTRAINT ck_status_novo_ordem_servico CHECK (status_novo BETWEEN 0 AND 4)
 );

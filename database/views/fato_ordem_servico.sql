@@ -3,14 +3,15 @@
  *
  * Descrição:
  * Centraliza as informações das ordens de serviço
- * para indicadores e análises por endereço e local.
+ * para indicadores e análises por unidade e local.
+ * esta_atrasada preserva o cálculo por prazo para status abertos (1, 2, 3).
+ * O status Atrasada pode divergir do prazo; validar_views reporta isso.
  * Uma linha representa uma ordem de serviço.
  *
  * Dependências:
  * - ordem_servico
  * - problema
  * - local_endereco
- * - status_ordem_servico
  * - tarefa
  * - ordem_servico_status_auditoria
  * - ordem_servico_tecnico_auditoria
@@ -21,48 +22,39 @@ WITH historico_status AS (
     SELECT
         osa.id AS auditoria_id,
         osa.ordem_servico_id,
-        osa.status_anterior_id,
-        status_anterior.nome AS status_anterior,
-        osa.status_novo_id,
-        status_novo.nome AS status_novo,
+        osa.status_anterior,
+        osa.status_novo,
         osa.data_alteracao,
         LEAD(osa.data_alteracao) OVER (
             PARTITION BY osa.ordem_servico_id
             ORDER BY osa.data_alteracao, osa.id
         ) AS proxima_alteracao
     FROM ordem_servico_status_auditoria osa
-    JOIN status_ordem_servico status_anterior
-        ON status_anterior.id = osa.status_anterior_id
-    JOIN status_ordem_servico status_novo
-        ON status_novo.id = osa.status_novo_id
 ),
 resumo_status AS (
     SELECT
         hs.ordem_servico_id,
         MIN(hs.data_alteracao)
             FILTER (
-                WHERE hs.status_novo = 'Em andamento'
+                WHERE hs.status_novo = 3
             ) AS data_inicio,
         MAX(hs.data_alteracao)
             FILTER (
-                WHERE hs.status_novo = 'Finalizadas'
+                WHERE hs.status_novo = 4
             ) AS ultima_finalizacao,
         COUNT(*)
             FILTER (
-                WHERE hs.status_novo = 'Finalizadas'
+                WHERE hs.status_novo = 4
             )::INTEGER AS qtd_finalizacoes,
         COUNT(*)
             FILTER (
-                WHERE hs.status_anterior = 'Finalizadas'
-                  AND hs.status_novo IN (
-                      'Em andamento',
-                      'Pausadas'
-                  )
+                WHERE hs.status_anterior = 4
+                  AND hs.status_novo IN (0, 1, 2, 3)
             )::INTEGER AS qtd_reaberturas,
         COALESCE(
             SUM(
                 CASE
-                    WHEN hs.status_novo = 'Pausadas'
+                    WHEN hs.status_novo = 2
                     THEN
                         EXTRACT(
                             EPOCH FROM (
@@ -99,9 +91,9 @@ SELECT
     os.id AS ordem_servico_id,
     os.problema_id,
     os.usuario_id AS tecnico_id,
-    os.status_ordem_servico_id AS status_id,
+    os.status_ordem_servico AS status_id,
     os.categoria_problema AS categoria_problema_id,
-    le.endereco_id AS endereco_id,
+    le.unidade_id AS unidade_id,
     p.local_endereco_id AS local_id,
     TO_CHAR(os.data_criacao, 'YYYYMMDD')::INTEGER AS data_criacao_id,
     TO_CHAR(os.data_prevista, 'YYYYMMDD')::INTEGER AS data_prevista_id,
@@ -110,7 +102,7 @@ SELECT
         THEN TO_CHAR(rs.data_inicio, 'YYYYMMDD')::INTEGER
     END AS data_inicio_id,
     CASE
-        WHEN s.nome = 'Finalizadas'
+        WHEN os.status_ordem_servico = 4
          AND rs.ultima_finalizacao IS NOT NULL
         THEN TO_CHAR(rs.ultima_finalizacao, 'YYYYMMDD')::INTEGER
     END AS data_conclusao_id,
@@ -118,7 +110,7 @@ SELECT
     os.data_prevista,
     rs.data_inicio,
     CASE
-        WHEN s.nome = 'Finalizadas'
+        WHEN os.status_ordem_servico = 4
         THEN rs.ultima_finalizacao
     END AS data_conclusao,
     os.prioridade,
@@ -137,7 +129,7 @@ SELECT
             ) / 60
     END AS tempo_espera_minutos,
     CASE
-        WHEN s.nome = 'Finalizadas'
+        WHEN os.status_ordem_servico = 4
          AND rs.data_inicio IS NOT NULL
          AND rs.ultima_finalizacao IS NOT NULL
         THEN
@@ -153,24 +145,18 @@ SELECT
             COALESCE(rs.tempo_pausado_minutos, 0)
     END AS tempo_resolucao_minutos,
     CASE
-        WHEN s.nome IN (
-            'Em andamento',
-            'Pausadas'
-        )
+        WHEN os.status_ordem_servico IN (1, 2, 3)
         THEN TRUE
         ELSE FALSE
     END AS esta_aberta,
     CASE
-        WHEN s.nome IN (
-            'Em andamento',
-            'Pausadas'
-        )
+        WHEN os.status_ordem_servico IN (1, 2, 3)
         AND os.data_prevista < NOW()
         THEN TRUE
         ELSE FALSE
     END AS esta_atrasada,
     CASE
-        WHEN s.nome = 'Finalizadas'
+        WHEN os.status_ordem_servico = 4
         THEN TRUE
         ELSE FALSE
     END AS finalizada,
@@ -180,7 +166,7 @@ SELECT
         ELSE FALSE
     END AS foi_finalizada,
     CASE
-        WHEN s.nome = 'Finalizadas'
+        WHEN os.status_ordem_servico = 4
          AND rs.ultima_finalizacao IS NOT NULL
          AND rs.ultima_finalizacao <= os.data_prevista
         THEN TRUE
@@ -206,8 +192,6 @@ JOIN problema p
     ON p.id = os.problema_id
 JOIN local_endereco le
     ON le.id = p.local_endereco_id
-JOIN status_ordem_servico s
-    ON s.id = os.status_ordem_servico_id
 LEFT JOIN resumo_status rs
     ON rs.ordem_servico_id = os.id
 LEFT JOIN reatribuicoes r

@@ -10,7 +10,6 @@ DROP TABLE IF EXISTS tarefa CASCADE;
 DROP TABLE IF EXISTS ordem_servico_status_auditoria CASCADE;
 DROP TABLE IF EXISTS ordem_servico_tecnico_auditoria CASCADE;
 DROP TABLE IF EXISTS ordem_servico CASCADE;
-DROP TABLE IF EXISTS status_ordem_servico CASCADE;
 DROP TABLE IF EXISTS ocorrencia CASCADE;
 DROP TABLE IF EXISTS problema CASCADE;
 DROP TABLE IF EXISTS equipamento CASCADE;
@@ -25,7 +24,7 @@ DROP TABLE IF EXISTS usuario CASCADE;
 DROP TABLE IF EXISTS pagamento CASCADE;
 DROP TABLE IF EXISTS contrato CASCADE;
 DROP TABLE IF EXISTS plano CASCADE;
-DROP TABLE IF EXISTS endereco CASCADE;
+DROP TABLE IF EXISTS unidade CASCADE;
 DROP TABLE IF EXISTS instituicao CASCADE;
 DROP TABLE IF EXISTS super_admin CASCADE;
 
@@ -61,13 +60,20 @@ CREATE TABLE instituicao (
     CONSTRAINT ck_tipo_instituicao_1_a_4 CHECK (tipo_instituicao BETWEEN 1 AND 4)
 );
 
--- TABELA: endereco
--- Descrição: Armazena os endereços/franquias das instituições.
--- Dependências: instituicao
+/**
+ * Tabela: unidade
+ *
+ * Descrição:
+ * Armazena as unidades e seus endereços físicos das instituições.
+ *
+ * Dependências:
+ * - instituicao
+ */
 
-CREATE TABLE endereco (
+CREATE TABLE unidade (
     id              SERIAL PRIMARY KEY,
     instituicao_id  INTEGER NOT NULL REFERENCES instituicao(id),
+    nome            VARCHAR(100) NOT NULL,
     cnpj            CHAR(14) NOT NULL UNIQUE,
     logradouro      VARCHAR(100) NOT NULL,
     numero          VARCHAR(10) NOT NULL,
@@ -95,14 +101,21 @@ CREATE TABLE plano (
     CONSTRAINT ck_duracao_meses_positiva CHECK (duracao_meses > 0)
 );
 
--- TABELA: contrato
--- Descrição: Registra os contratos vinculados aos endereços das instituições.
--- Dependências: plano, endereco
+/**
+ * Tabela: contrato
+ *
+ * Descrição:
+ * Registra os contratos vinculados às unidades das instituições.
+ *
+ * Dependências:
+ * - plano
+ * - unidade
+ */
 
 CREATE TABLE contrato (
     id            SERIAL PRIMARY KEY,
     plano_id      INTEGER NOT NULL REFERENCES plano(id),
-    endereco_id   INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id   INTEGER NOT NULL REFERENCES unidade(id),
     data_inicio   DATE NOT NULL DEFAULT CURRENT_DATE,
     data_fim      DATE NOT NULL,
     status        INTEGER NOT NULL DEFAULT 1,
@@ -127,13 +140,19 @@ CREATE TABLE pagamento (
     CONSTRAINT ck_metodo_pagamento_1_a_3 CHECK (metodo_pagamento BETWEEN 1 AND 3)
 );
 
--- TABELA: usuario
--- Descrição: Armazena os usuários e suas informações de acesso.
--- Dependências: endereco
+/**
+ * Tabela: usuario
+ *
+ * Descrição:
+ * Armazena os usuários e suas informações de acesso.
+ *
+ * Dependências:
+ * - unidade
+ */
 
 CREATE TABLE usuario (
     id               SERIAL PRIMARY KEY,
-    endereco_id      INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id      INTEGER NOT NULL REFERENCES unidade(id),
     nome_completo    VARCHAR(100) NOT NULL,
     email            VARCHAR(100) NOT NULL UNIQUE,
     tipo_acesso      INTEGER NOT NULL,
@@ -143,7 +162,7 @@ CREATE TABLE usuario (
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo       BOOLEAN NOT NULL DEFAULT FALSE,
     primeiro_acesso  BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT uk_usuario_id_endereco UNIQUE (id, endereco_id),
+    CONSTRAINT uk_usuario_id_unidade UNIQUE (id, unidade_id),
     CONSTRAINT ck_tipo_acesso_usuario_1_a_4 CHECK (tipo_acesso BETWEEN 1 AND 4)
 );
 
@@ -174,13 +193,19 @@ CREATE TABLE feedback (
     data_criacao   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- TABELA: local_endereco
--- Descrição: Representa locais específicos dentro dos endereços.
--- Dependências: endereco
+/**
+ * Tabela: local_endereco
+ *
+ * Descrição:
+ * Representa locais específicos dentro das unidades.
+ *
+ * Dependências:
+ * - unidade
+ */
 
 CREATE TABLE local_endereco (
     id                   SERIAL PRIMARY KEY,
-    endereco_id          INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id          INTEGER NOT NULL REFERENCES unidade(id),
     nome                 VARCHAR(100) NOT NULL,
     tipo_local_endereco  INTEGER NOT NULL,
     descricao            VARCHAR(255) NOT NULL,
@@ -302,43 +327,49 @@ CREATE TABLE ocorrencia (
     CONSTRAINT ck_prioridade_ocorrencia_0_a_2 CHECK (prioridade BETWEEN 0 AND 2)
 );
 
--- TABELA: status_ordem_servico
--- Descrição: Define os status utilizados nas ordens de serviço e nas tarefas.
--- Dependências: -
-
-CREATE TABLE status_ordem_servico (
-    id         SERIAL PRIMARY KEY,
-    nome       VARCHAR(100) NOT NULL,
-    descricao  VARCHAR(255)
-);
-
--- TABELA: ordem_servico
--- Descrição: Registra as ordens de serviço e seu acompanhamento.
--- Dependências: problema, usuario, status_ordem_servico
+/**
+ * Tabela: ordem_servico
+ *
+ * Descrição:
+ * Registra as ordens de serviço e seu acompanhamento.
+ *
+ * Dependências:
+ * - problema
+ * - usuario
+ */
 
 CREATE TABLE ordem_servico (
     id                       SERIAL PRIMARY KEY,
     problema_id              INTEGER NOT NULL UNIQUE REFERENCES problema(id),
     usuario_id               INTEGER NOT NULL REFERENCES usuario(id),
-    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    status_ordem_servico                   INTEGER NOT NULL DEFAULT 0,
     categoria_problema       INTEGER NOT NULL,
     data_prevista            TIMESTAMP NOT NULL,
     prioridade               INTEGER NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_status_ordem_servico CHECK (status_ordem_servico BETWEEN 0 AND 4),
     CONSTRAINT ck_categoria_problema_os_1_a_10 CHECK (categoria_problema BETWEEN 1 AND 10),
     CONSTRAINT ck_prioridade_os_0_a_2 CHECK (prioridade BETWEEN 0 AND 2)
 );
 
--- TABELA: ordem_servico_status_auditoria
--- Descrição: Registra as alterações de status das ordens de serviço, armazenando o valor anterior e o novo valor.
--- Dependências: ordem_servico, status_ordem_servico
+/**
+ * Tabela: ordem_servico_status_auditoria
+ *
+ * Descrição:
+ * Registra as alterações de status das ordens de serviço, armazenando o valor anterior e o novo valor.
+ *
+ * Dependências:
+ * - ordem_servico
+ */
 
 CREATE TABLE ordem_servico_status_auditoria (
     id                  SERIAL PRIMARY KEY,
     ordem_servico_id    INTEGER NOT NULL REFERENCES ordem_servico(id),
-    status_anterior_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    status_novo_id      INTEGER NOT NULL REFERENCES status_ordem_servico(id),
-    data_alteracao      TIMESTAMP NOT NULL DEFAULT NOW()
+    status_anterior     INTEGER NOT NULL,
+    status_novo         INTEGER NOT NULL,
+    data_alteracao      TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_status_anterior_ordem_servico CHECK (status_anterior BETWEEN 0 AND 4),
+    CONSTRAINT ck_status_novo_ordem_servico CHECK (status_novo BETWEEN 0 AND 4)
 );
 
 -- TABELA: ordem_servico_tecnico_auditoria
@@ -353,17 +384,24 @@ CREATE TABLE ordem_servico_tecnico_auditoria (
     data_alteracao       TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- TABELA: tarefa
--- Descrição: Registra as tarefas vinculadas às ordens de serviço, permitindo seu acompanhamento em um kanban próprio.
--- Dependências: ordem_servico, status_ordem_servico
+/**
+ * Tabela: tarefa
+ *
+ * Descrição:
+ * Registra as tarefas vinculadas às ordens de serviço, permitindo seu acompanhamento em um kanban próprio.
+ *
+ * Dependências:
+ * - ordem_servico
+ */
 
 CREATE TABLE tarefa (
     id                       SERIAL PRIMARY KEY,
     ordem_servico_id         INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
-    status_ordem_servico_id  INTEGER NOT NULL REFERENCES status_ordem_servico(id),
+    status_ordem_servico                   INTEGER NOT NULL DEFAULT 0,
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
-    data_criacao             TIMESTAMP NOT NULL DEFAULT NOW()
+    data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_status_tarefa CHECK (status_ordem_servico BETWEEN 0 AND 4)
 );
 
 -- TABELA: observacao_conclusao
@@ -402,13 +440,19 @@ CREATE TABLE foto (
     )
 );
 
--- TABELA: turno
--- Descrição: Define os turnos de funcionamento dos endereços.
--- Dependências: endereco
+/**
+ * Tabela: turno
+ *
+ * Descrição:
+ * Define os turnos de funcionamento das unidades.
+ *
+ * Dependências:
+ * - unidade
+ */
 
 CREATE TABLE turno (
     id                    SERIAL PRIMARY KEY,
-    endereco_id           INTEGER NOT NULL REFERENCES endereco(id),
+    unidade_id           INTEGER NOT NULL REFERENCES unidade(id),
     nome                  VARCHAR(100) NOT NULL,
     hora_inicio           INTEGER NOT NULL,
     hora_fim              INTEGER NOT NULL,

@@ -67,7 +67,7 @@
   1 = Média
   2 = Baixa
 
-- status_ordem_servico:
+- ordem_servico.status_ordem_servico e tarefa.status_ordem_servico (independentes):
   0 = Não iniciadas
   1 = Atrasada
   2 = Pausada

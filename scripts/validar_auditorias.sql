@@ -1,4 +1,4 @@
--- Executar após scripts/criar_banco.sql, com a carga inicial disponível.
+-- Executado após scripts/criar_banco.sql, com a carga inicial disponível.
 -- Valida snapshots completos, operações, datas e persistência após DELETE.
 -- Todas as alterações são desfeitas ao final.
 \set ON_ERROR_STOP on
@@ -18,7 +18,7 @@ DECLARE
     usuario_teste_id INTEGER;
     pagamento_teste_id INTEGER;
     problema_teste_id INTEGER;
-    endereco_teste_id INTEGER;
+    unidade_teste_id INTEGER;
     contrato_teste_id INTEGER;
     categoria_teste_id INTEGER;
     local_teste_id INTEGER;
@@ -28,12 +28,12 @@ DECLARE
     esperado RECORD;
     quantidade INTEGER;
 BEGIN
-    SELECT id INTO endereco_teste_id FROM endereco ORDER BY id LIMIT 1;
+    SELECT id INTO unidade_teste_id FROM unidade ORDER BY id LIMIT 1;
     SELECT id INTO contrato_teste_id FROM contrato ORDER BY id LIMIT 1;
     SELECT id INTO categoria_teste_id FROM categoria_equipamento ORDER BY id LIMIT 1;
     SELECT id INTO local_teste_id FROM local_endereco ORDER BY id LIMIT 1;
 
-    IF endereco_teste_id IS NULL OR contrato_teste_id IS NULL
+    IF unidade_teste_id IS NULL OR contrato_teste_id IS NULL
        OR categoria_teste_id IS NULL OR local_teste_id IS NULL THEN
         RAISE EXCEPTION 'Execute a carga inicial antes de validar as auditorias.';
     END IF;
@@ -43,10 +43,10 @@ BEGIN
     SELECT LEAST(0, COALESCE(MIN(id), 0)) - 1 INTO problema_teste_id FROM problema;
 
     INSERT INTO usuario (
-        id, endereco_id, nome_completo, email, tipo_acesso,
+        id, unidade_id, nome_completo, email, tipo_acesso,
         senha_hash, cargo, data_nascimento
     ) VALUES (
-        usuario_teste_id, endereco_teste_id, 'Teste de auditoria',
+        usuario_teste_id, unidade_teste_id, 'Teste de auditoria',
         'auditoria-' || MD5(CLOCK_TIMESTAMP()::TEXT) || '@teste.invalid',
         4, 'hash-de-teste', 'Solicitante', DATE '2000-01-01'
     ) RETURNING TO_JSONB(usuario) INTO dados_inseridos;

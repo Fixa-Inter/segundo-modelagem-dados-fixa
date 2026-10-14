@@ -1,16 +1,17 @@
 /*
- * Tabela: endereco
+ * Tabela: unidade
  *
  * Descrição:
- * Armazena os endereços/franquias associados às instituições cadastradas.
+ * Armazena as unidades e seus endereços físicos associados às instituições cadastradas.
  *
  * Dependências:
  * - instituicao
  */
 
-CREATE TABLE endereco(
+CREATE TABLE unidade(
     id             SERIAL PRIMARY KEY,
     instituicao_id INTEGER NOT NULL REFERENCES instituicao(id),
+    nome           VARCHAR(100) NOT NULL,
     cnpj           CHAR(14) NOT NULL UNIQUE,
     logradouro     VARCHAR(100) NOT NULL,
     numero         VARCHAR(10) NOT NULL,

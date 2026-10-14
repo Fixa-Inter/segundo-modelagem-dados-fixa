@@ -2,7 +2,7 @@
  * Tabela: dim_local
  *
  * Descrição:
- * Disponibiliza os locais existentes dentro de cada endereço,
+ * Disponibiliza os locais existentes dentro de cada unidade,
  * permitindo análises por sala, laboratório e demais ambientes.
  *
  * Dependências:
@@ -12,7 +12,7 @@
 CREATE OR REPLACE VIEW dim_local AS
 SELECT
     le.id AS local_id,
-    le.endereco_id,
+    le.unidade_id,
     le.nome AS nome_local,
     CASE le.tipo_local_endereco
         WHEN 1 THEN 'Sala de Aula'
