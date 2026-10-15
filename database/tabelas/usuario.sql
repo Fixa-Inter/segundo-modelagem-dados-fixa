@@ -9,8 +9,8 @@
  */
 
 CREATE TABLE usuario (
-    id               SERIAL PRIMARY KEY,
-    unidade_id      INTEGER NOT NULL REFERENCES unidade(id),
+    id               BIGSERIAL PRIMARY KEY,
+    unidade_id      BIGINT NOT NULL REFERENCES unidade(id),
     nome_completo    VARCHAR(100) NOT NULL,
     email            VARCHAR(100) NOT NULL UNIQUE,
     tipo_acesso      INTEGER NOT NULL,

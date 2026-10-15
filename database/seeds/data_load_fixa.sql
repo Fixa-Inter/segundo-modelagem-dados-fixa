@@ -206,7 +206,7 @@ INSERT INTO aptidao (
     id, usuario_id, categoria_problema, nota, data_criacao, esta_ativo
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY u.id, g)::INTEGER,
+    ROW_NUMBER() OVER (ORDER BY u.id, g)::BIGINT,
     u.id,
     ((u.id + g * 3 - 1) % 10) + 1,
     ROUND((6.0 + ((u.id + g) % 5) * 0.8)::NUMERIC, 2),
@@ -653,7 +653,7 @@ INSERT INTO observacao_conclusao (
     id, ordem_servico_id, dificuldade, observacao, data_criacao
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY os.id)::INTEGER,
+    ROW_NUMBER() OVER (ORDER BY os.id)::BIGINT,
     os.id,
     ((os.id - 1) % 3) + 1,
     (ARRAY[
@@ -925,7 +925,7 @@ BEGIN
 
         sequence_id := pg_get_serial_sequence(verificacao.tabela, 'id');
         IF sequence_id IS NULL THEN
-            RAISE EXCEPTION 'Sequence SERIAL não encontrada para %.', verificacao.tabela;
+            RAISE EXCEPTION 'Sequence BIGSERIAL não encontrada para %.', verificacao.tabela;
         END IF;
         EXECUTE format('SELECT last_value, is_called FROM %s', sequence_id::REGCLASS)
             INTO sequence_ultimo_id, sequence_chamada;

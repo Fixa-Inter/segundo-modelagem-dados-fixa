@@ -4,6 +4,10 @@ As nove dimensões e as três fatos são views PostgreSQL sobre as tabelas
 operacionais. Os IDs mantêm os valores originais; não há geração independente
 de chaves nem tabelas físicas de Data Warehouse.
 
+As PKs operacionais usam BIGSERIAL e as FKs usam BIGINT. As views herdam
+BIGINT para os IDs das entidades. Códigos fixos de status/categoria e chaves
+de calendário YYYYMMDD permanecem INTEGER.
+
 ## Hierarquia e escopo do gestor
 
 A organização analítica é instituição → unidade → local. Cada gestor

@@ -9,8 +9,8 @@
  */
 
 CREATE TABLE aptidao (
-    id                  SERIAL PRIMARY KEY,
-    usuario_id          INTEGER NOT NULL REFERENCES usuario(id),
+    id                  BIGSERIAL PRIMARY KEY,
+    usuario_id          BIGINT NOT NULL REFERENCES usuario(id),
     categoria_problema  INTEGER NOT NULL,
     nota                DECIMAL(4, 2) NOT NULL,
     data_criacao        TIMESTAMP NOT NULL DEFAULT NOW(),

@@ -9,8 +9,8 @@
  */
 
 CREATE TABLE unidade(
-    id             SERIAL PRIMARY KEY,
-    instituicao_id INTEGER NOT NULL REFERENCES instituicao(id),
+    id             BIGSERIAL PRIMARY KEY,
+    instituicao_id BIGINT NOT NULL REFERENCES instituicao(id),
     nome           VARCHAR(100) NOT NULL,
     cnpj           CHAR(14) NOT NULL UNIQUE,
     logradouro     VARCHAR(100) NOT NULL,

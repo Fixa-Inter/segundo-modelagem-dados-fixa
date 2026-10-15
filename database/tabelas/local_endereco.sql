@@ -9,8 +9,8 @@
  */
 
 CREATE TABLE local_endereco (
-    id                   SERIAL PRIMARY KEY,
-    unidade_id          INTEGER NOT NULL REFERENCES unidade(id),
+    id                   BIGSERIAL PRIMARY KEY,
+    unidade_id          BIGINT NOT NULL REFERENCES unidade(id),
     nome                 VARCHAR(100) NOT NULL,
     tipo_local_endereco  INTEGER NOT NULL,
     descricao            VARCHAR(255) NOT NULL,

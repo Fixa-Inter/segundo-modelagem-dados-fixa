@@ -11,9 +11,9 @@
  */
 
 CREATE TABLE turno_usuario(
-    id           SERIAL PRIMARY KEY,
-    turno_id     INTEGER NOT NULL REFERENCES turno(id),
-    usuario_id   INTEGER NOT NULL REFERENCES usuario(id),
+    id           BIGSERIAL PRIMARY KEY,
+    turno_id     BIGINT NOT NULL REFERENCES turno(id),
+    usuario_id   BIGINT NOT NULL REFERENCES usuario(id),
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE,
 
