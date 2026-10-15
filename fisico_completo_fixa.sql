@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS modelo_equipamento CASCADE;
 DROP TABLE IF EXISTS marca_equipamento CASCADE;
 DROP TABLE IF EXISTS categoria_equipamento CASCADE;
 DROP TABLE IF EXISTS evento CASCADE;
-DROP TABLE IF EXISTS local_endereco CASCADE;
+DROP TABLE IF EXISTS local_unidade CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS aptidao CASCADE;
 DROP TABLE IF EXISTS usuario CASCADE;
@@ -195,7 +195,7 @@ CREATE TABLE feedback (
 );
 
 /**
- * Tabela: local_endereco
+ * Tabela: local_unidade
  *
  * Descrição:
  * Representa locais específicos dentro das unidades.
@@ -204,26 +204,26 @@ CREATE TABLE feedback (
  * - unidade
  */
 
-CREATE TABLE local_endereco (
+CREATE TABLE local_unidade (
     id                   BIGSERIAL PRIMARY KEY,
     unidade_id          BIGINT NOT NULL REFERENCES unidade(id),
     nome                 VARCHAR(100) NOT NULL,
-    tipo_local_endereco  INTEGER NOT NULL,
+    tipo_local_unidade  INTEGER NOT NULL,
     descricao            VARCHAR(255) NOT NULL,
     data_criacao         TIMESTAMP NOT NULL DEFAULT NOW(),
     data_atualizacao     TIMESTAMP DEFAULT NOW(),
     esta_ativo           BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT ck_tipo_local_endereco_1_a_6 CHECK (tipo_local_endereco BETWEEN 1 AND 6)
+    CONSTRAINT ck_tipo_local_unidade_1_a_6 CHECK (tipo_local_unidade BETWEEN 1 AND 6)
 );
 
 -- TABELA: evento
 -- Descrição: Armazena eventos agendados em um endereço.
--- Dependências: usuario, local_endereco
+-- Dependências: usuario, local_unidade
 
 CREATE TABLE evento (
     id                 BIGSERIAL PRIMARY KEY,
     usuario_id         BIGINT NOT NULL REFERENCES usuario(id),
-    local_endereco_id  BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id  BIGINT NOT NULL REFERENCES local_unidade(id),
     titulo             VARCHAR(100) NOT NULL,
     descricao          VARCHAR(255) NOT NULL,
     descricao_local    VARCHAR(255) NOT NULL,
@@ -279,13 +279,13 @@ CREATE TABLE modelo_equipamento (
 
 -- TABELA: equipamento
 -- Descrição: Armazena os equipamentos e suas localizações.
--- Dependências: usuario, modelo_equipamento, local_endereco
+-- Dependências: usuario, modelo_equipamento, local_unidade
 
 CREATE TABLE equipamento (
     id                    BIGSERIAL PRIMARY KEY,
     usuario_id            BIGINT NOT NULL REFERENCES usuario(id),
     modelo_equipamento_id BIGINT NOT NULL REFERENCES modelo_equipamento(id),
-    local_endereco_id     BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id     BIGINT NOT NULL REFERENCES local_unidade(id),
     codigo                VARCHAR(100) NOT NULL,
     data_criacao          TIMESTAMP NOT NULL DEFAULT NOW(),
     data_atualizacao      TIMESTAMP DEFAULT NOW(),
@@ -294,13 +294,13 @@ CREATE TABLE equipamento (
 
 -- TABELA: problema
 -- Descrição: Registra problemas identificados nas instituições.
--- Dependências: usuario, categoria_equipamento, local_endereco
+-- Dependências: usuario, categoria_equipamento, local_unidade
 
 CREATE TABLE problema (
     id                       BIGSERIAL PRIMARY KEY,
     usuario_id               BIGINT NOT NULL REFERENCES usuario(id),
     categoria_equipamento_id BIGINT NOT NULL REFERENCES categoria_equipamento(id),
-    local_endereco_id        BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id        BIGINT NOT NULL REFERENCES local_unidade(id),
     titulo                   VARCHAR(100) NOT NULL,
     descricao_problema       VARCHAR(255) NOT NULL,
     descricao_local          VARCHAR(255) NOT NULL,
@@ -319,12 +319,12 @@ CREATE TABLE problema (
 
 -- TABELA: ocorrencia
 -- Descrição: Registra problemas não registrados previamente, mas que já foram resolvidos por um técnico.
--- Dependências: usuario, local_endereco, categoria_equipamento
+-- Dependências: usuario, local_unidade, categoria_equipamento
 
 CREATE TABLE ocorrencia (
     id                       BIGSERIAL PRIMARY KEY,
     usuario_id               BIGINT NOT NULL REFERENCES usuario(id),
-    local_endereco_id        BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id        BIGINT NOT NULL REFERENCES local_unidade(id),
     categoria_equipamento_id BIGINT NOT NULL REFERENCES categoria_equipamento(id),
     categoria_problema       INTEGER NOT NULL,
     titulo                   VARCHAR(100) NOT NULL,
@@ -517,7 +517,7 @@ CREATE TABLE turno_usuario (
  * - modelo_equipamento
  * - categoria_equipamento
  * - marca_equipamento
- * - local_endereco
+ * - local_unidade
  * - usuario
  */
 
@@ -582,7 +582,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.atualizar_data_atualizacao();
 
 CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
-BEFORE UPDATE ON public.local_endereco
+BEFORE UPDATE ON public.local_unidade
 FOR EACH ROW
 EXECUTE FUNCTION public.atualizar_data_atualizacao();
 

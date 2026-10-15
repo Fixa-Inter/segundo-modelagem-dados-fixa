@@ -1,4 +1,5 @@
 \set ON_ERROR_STOP on
+\encoding UTF8
 
 \echo '=============================='
 \echo 'CRIANDO BANCO FIXA'
@@ -27,7 +28,7 @@
 \ir ../database/tabelas/feedback.sql
 
 -- LOCAIS / EVENTOS
-\ir ../database/tabelas/local_endereco.sql
+\ir ../database/tabelas/local_unidade.sql
 \ir ../database/tabelas/evento.sql
 
 -- EQUIPAMENTOS

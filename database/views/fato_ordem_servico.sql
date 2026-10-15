@@ -11,7 +11,7 @@
  * Dependências:
  * - ordem_servico
  * - problema
- * - local_endereco
+ * - local_unidade
  * - tarefa
  * - ordem_servico_status_auditoria
  * - ordem_servico_tecnico_auditoria
@@ -94,7 +94,7 @@ SELECT
     os.status_ordem_servico AS status_id,
     os.categoria_problema AS categoria_problema_id,
     le.unidade_id AS unidade_id,
-    p.local_endereco_id AS local_id,
+    p.local_unidade_id AS local_id,
     TO_CHAR(os.data_criacao, 'YYYYMMDD')::INTEGER AS data_criacao_id,
     TO_CHAR(os.data_prevista, 'YYYYMMDD')::INTEGER AS data_prevista_id,
     CASE
@@ -190,8 +190,8 @@ SELECT
 FROM ordem_servico os
 JOIN problema p
     ON p.id = os.problema_id
-JOIN local_endereco le
-    ON le.id = p.local_endereco_id
+JOIN local_unidade le
+    ON le.id = p.local_unidade_id
 LEFT JOIN resumo_status rs
     ON rs.ordem_servico_id = os.id
 LEFT JOIN reatribuicoes r

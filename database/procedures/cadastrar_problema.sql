@@ -9,7 +9,7 @@
  * Dependências:
  * - usuario
  * - unidade
- * - local_endereco
+ * - local_unidade
  * - categoria_equipamento
  * - problema
  * - foto
@@ -47,7 +47,7 @@ BEGIN
 
     IF NOT EXISTS (
         SELECT 1
-        FROM local_endereco le
+        FROM local_unidade le
         JOIN unidade u ON u.id = le.unidade_id
         WHERE le.id = p_local_id
     ) THEN
@@ -72,7 +72,7 @@ BEGIN
 
     INSERT INTO problema (
         usuario_id,
-        local_endereco_id,
+        local_unidade_id,
         categoria_equipamento_id,
         titulo,
         descricao_problema,

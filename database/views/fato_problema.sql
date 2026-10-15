@@ -8,7 +8,7 @@
  *
  * Dependências:
  * - problema
- * - local_endereco
+ * - local_unidade
  * - ordem_servico
  */
 
@@ -17,7 +17,7 @@ SELECT
     p.id AS problema_id,
     p.usuario_id AS solicitante_id,
     le.unidade_id AS unidade_id,
-    p.local_endereco_id AS local_id,
+    p.local_unidade_id AS local_id,
     p.categoria_equipamento_id AS categoria_equipamento_id,
     p.status AS status_problema_id,
     TO_CHAR(p.data_criacao, 'YYYYMMDD')::INTEGER AS data_criacao_id,
@@ -44,5 +44,5 @@ SELECT
         WHERE os.problema_id = p.id
     ) AS gerou_ordem_servico
 FROM problema p
-JOIN local_endereco le
-    ON le.id = p.local_endereco_id;
+JOIN local_unidade le
+    ON le.id = p.local_unidade_id;

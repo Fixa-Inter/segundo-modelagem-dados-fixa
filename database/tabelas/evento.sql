@@ -7,13 +7,13 @@
  *
  * Dependências:
  * - usuario
- * - local_endereco
+ * - local_unidade
  */
 
 CREATE TABLE evento(
     id                BIGSERIAL PRIMARY KEY,
     usuario_id        BIGINT NOT NULL REFERENCES usuario(id),
-    local_endereco_id BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id BIGINT NOT NULL REFERENCES local_unidade(id),
     titulo            VARCHAR(100) NOT NULL,
     descricao         VARCHAR(255) NOT NULL,
     descricao_local   VARCHAR(255) NOT NULL,

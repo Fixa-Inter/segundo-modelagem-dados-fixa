@@ -7,14 +7,14 @@
  *
  * Dependências:
  * - usuario
- * - local_endereco
+ * - local_unidade
  * - categoria_equipamento
  */
 
 CREATE TABLE ocorrencia (
     id                       BIGSERIAL PRIMARY KEY,
     usuario_id               BIGINT NOT NULL REFERENCES usuario(id),
-    local_endereco_id        BIGINT NOT NULL REFERENCES local_endereco(id),
+    local_unidade_id        BIGINT NOT NULL REFERENCES local_unidade(id),
     categoria_equipamento_id BIGINT NOT NULL REFERENCES categoria_equipamento(id),
     categoria_problema       INTEGER NOT NULL,
     titulo                   VARCHAR(100) NOT NULL,

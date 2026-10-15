@@ -6,7 +6,7 @@
  * permitindo análises por sala, laboratório e demais ambientes.
  *
  * Dependências:
- * - local_endereco
+ * - local_unidade
  */
 
 CREATE OR REPLACE VIEW dim_local AS
@@ -14,7 +14,7 @@ SELECT
     le.id AS local_id,
     le.unidade_id,
     le.nome AS nome_local,
-    CASE le.tipo_local_endereco
+    CASE le.tipo_local_unidade
         WHEN 1 THEN 'Sala de Aula'
         WHEN 2 THEN 'Laboratório'
         WHEN 3 THEN 'Depto. Administrativo'
@@ -24,4 +24,4 @@ SELECT
     END AS tipo_local,
     le.descricao,
     le.esta_ativo
-FROM local_endereco le;
+FROM local_unidade le;

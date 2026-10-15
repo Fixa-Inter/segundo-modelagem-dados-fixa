@@ -39,7 +39,7 @@
   9 = Iluminação
   10 = Limpeza e Conservação
 
-- local_endereco.tipo_local_endereco:
+- local_unidade.tipo_local_unidade:
   1 = Sala de Aula
   2 = Laboratório
   3 = Depto. Administrativo

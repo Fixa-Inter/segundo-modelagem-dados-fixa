@@ -17,7 +17,7 @@
  * - modelo_equipamento
  * - categoria_equipamento
  * - marca_equipamento
- * - local_endereco
+ * - local_unidade
  * - usuario
  */
 
@@ -82,7 +82,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.atualizar_data_atualizacao();
 
 CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
-BEFORE UPDATE ON public.local_endereco
+BEFORE UPDATE ON public.local_unidade
 FOR EACH ROW
 EXECUTE FUNCTION public.atualizar_data_atualizacao();
 
