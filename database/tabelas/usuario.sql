@@ -18,6 +18,7 @@ CREATE TABLE usuario (
     cargo            VARCHAR(100) NOT NULL,
     data_nascimento  DATE NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo       BOOLEAN NOT NULL DEFAULT FALSE,
     primeiro_acesso  BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uk_usuario_id_unidade UNIQUE (id, unidade_id),

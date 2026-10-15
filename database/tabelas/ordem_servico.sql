@@ -18,7 +18,7 @@ CREATE TABLE ordem_servico (
     data_prevista            TIMESTAMP NOT NULL,
     prioridade               INTEGER NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_status_ordem_servico CHECK (status_ordem_servico BETWEEN 0 AND 4),
     CONSTRAINT ck_categoria_problema_os_1_a_10 CHECK (categoria_problema BETWEEN 1 AND 10),

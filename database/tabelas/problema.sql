@@ -20,7 +20,7 @@ CREATE TABLE problema (
     descricao_local          VARCHAR(255) NOT NULL,
     motivo_recusa            VARCHAR(255),
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     status                   INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT ck_status_problema_0_a_2 CHECK (status BETWEEN 0 AND 2),

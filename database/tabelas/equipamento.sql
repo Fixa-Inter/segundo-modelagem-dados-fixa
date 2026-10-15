@@ -18,6 +18,6 @@ CREATE TABLE equipamento(
     local_endereco_id     BIGINT NOT NULL REFERENCES local_endereco(id),
     codigo                VARCHAR(100) NOT NULL,
     data_criacao          TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao      TIMESTAMP,
+    data_atualizacao      TIMESTAMP DEFAULT NOW(),
     esta_ativo            BOOLEAN NOT NULL DEFAULT TRUE
 );

@@ -92,6 +92,7 @@
 
 \echo '4. Criando triggers...'
 
+\ir ../database/triggers/atualizar_data_atualizacao.sql
 \ir ../database/triggers/auditar_status_ordem_servico.sql
 \ir ../database/triggers/auditar_tecnico_ordem_servico.sql
 \ir ../database/triggers/auditar_pagamento.sql

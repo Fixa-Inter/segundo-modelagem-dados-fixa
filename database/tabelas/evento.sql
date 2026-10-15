@@ -21,6 +21,6 @@ CREATE TABLE evento(
     data_hora_inicio  TIMESTAMP NOT NULL,
     data_hora_fim     TIMESTAMP NOT NULL,
     data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao  TIMESTAMP,
+    data_atualizacao  TIMESTAMP DEFAULT NOW(),
     esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE
 );

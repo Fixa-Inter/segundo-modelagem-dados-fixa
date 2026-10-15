@@ -160,6 +160,7 @@ CREATE TABLE usuario (
     cargo            VARCHAR(100) NOT NULL,
     data_nascimento  DATE NOT NULL,
     data_criacao     TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo       BOOLEAN NOT NULL DEFAULT FALSE,
     primeiro_acesso  BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uk_usuario_id_unidade UNIQUE (id, unidade_id),
@@ -210,6 +211,7 @@ CREATE TABLE local_endereco (
     tipo_local_endereco  INTEGER NOT NULL,
     descricao            VARCHAR(255) NOT NULL,
     data_criacao         TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_atualizacao     TIMESTAMP DEFAULT NOW(),
     esta_ativo           BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_tipo_local_endereco_1_a_6 CHECK (tipo_local_endereco BETWEEN 1 AND 6)
 );
@@ -229,7 +231,7 @@ CREATE TABLE evento (
     data_hora_inicio   TIMESTAMP NOT NULL,
     data_hora_fim      TIMESTAMP NOT NULL,
     data_criacao       TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao   TIMESTAMP,
+    data_atualizacao   TIMESTAMP DEFAULT NOW(),
     esta_ativo         BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -243,7 +245,7 @@ CREATE TABLE categoria_equipamento (
     nome          VARCHAR(100) NOT NULL,
     descricao     VARCHAR(255) NOT NULL,
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao TIMESTAMP,
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -256,7 +258,7 @@ CREATE TABLE marca_equipamento (
     nome          VARCHAR(100) NOT NULL,
     descricao     VARCHAR(255) NOT NULL,
     data_criacao  TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao TIMESTAMP,
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -271,7 +273,7 @@ CREATE TABLE modelo_equipamento (
     nome                     VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -286,7 +288,7 @@ CREATE TABLE equipamento (
     local_endereco_id     BIGINT NOT NULL REFERENCES local_endereco(id),
     codigo                VARCHAR(100) NOT NULL,
     data_criacao          TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao      TIMESTAMP,
+    data_atualizacao      TIMESTAMP DEFAULT NOW(),
     esta_ativo            BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -304,7 +306,7 @@ CREATE TABLE problema (
     descricao_local          VARCHAR(255) NOT NULL,
     motivo_recusa            VARCHAR(255),
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     status                   INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT ck_status_problema_0_a_2 CHECK (status BETWEEN 0 AND 2),
@@ -330,7 +332,7 @@ CREATE TABLE ocorrencia (
     descricao_local          VARCHAR(255) NOT NULL,
     prioridade               INTEGER NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_categoria_problema_ocorrencia_1_a_10 CHECK (categoria_problema BETWEEN 1 AND 10),
     CONSTRAINT ck_prioridade_ocorrencia_0_a_2 CHECK (prioridade BETWEEN 0 AND 2)
@@ -356,7 +358,7 @@ CREATE TABLE ordem_servico (
     data_prevista            TIMESTAMP NOT NULL,
     prioridade               INTEGER NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_status_ordem_servico CHECK (status_ordem_servico BETWEEN 0 AND 4),
     CONSTRAINT ck_categoria_problema_os_1_a_10 CHECK (categoria_problema BETWEEN 1 AND 10),
@@ -412,7 +414,7 @@ CREATE TABLE tarefa (
     titulo                   VARCHAR(100) NOT NULL,
     descricao                VARCHAR(255) NOT NULL,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao         TIMESTAMP,
+    data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_status_tarefa CHECK (status_ordem_servico BETWEEN 0 AND 4)
 );
@@ -427,7 +429,7 @@ CREATE TABLE observacao_conclusao (
     dificuldade       INTEGER NOT NULL,
     observacao        VARCHAR(255) NOT NULL,
     data_criacao      TIMESTAMP NOT NULL DEFAULT NOW(),
-    data_atualizacao  TIMESTAMP,
+    data_atualizacao  TIMESTAMP DEFAULT NOW(),
     esta_ativo        BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT ck_dificuldade_observacao_1_a_3 CHECK (dificuldade BETWEEN 1 AND 3)
 );
@@ -495,3 +497,96 @@ CREATE TABLE turno_usuario (
     esta_ativo    BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uk_turno_usuario UNIQUE (turno_id, usuario_id)
 );
+
+/**
+ * Trigger: trg_atualizar_data_atualizacao
+ *
+ * Descrição:
+ * Atualiza data_atualizacao com NOW() em cada registro afetado por UPDATE.
+ * Uma função compartilhada atende uma trigger BEFORE UPDATE por tabela.
+ * O DEFAULT NOW() das colunas continua responsável pelos INSERTs.
+ *
+ * Dependências:
+ * - problema
+ * - ocorrencia
+ * - ordem_servico
+ * - tarefa
+ * - observacao_conclusao
+ * - evento
+ * - equipamento
+ * - modelo_equipamento
+ * - categoria_equipamento
+ * - marca_equipamento
+ * - local_endereco
+ * - usuario
+ */
+
+CREATE OR REPLACE FUNCTION public.atualizar_data_atualizacao()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.data_atualizacao := NOW();
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.problema
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.ocorrencia
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.ordem_servico
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.tarefa
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.observacao_conclusao
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.evento
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.equipamento
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.modelo_equipamento
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.categoria_equipamento
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.marca_equipamento
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.local_endereco
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
+
+CREATE OR REPLACE TRIGGER trg_atualizar_data_atualizacao
+BEFORE UPDATE ON public.usuario
+FOR EACH ROW
+EXECUTE FUNCTION public.atualizar_data_atualizacao();
