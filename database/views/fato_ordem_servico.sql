@@ -15,6 +15,7 @@
  * - tarefa
  * - ordem_servico_status_auditoria
  * - ordem_servico_tecnico_auditoria
+ * - public.traduzir_prioridade(INTEGER)
  */
 
 CREATE OR REPLACE VIEW fato_ordem_servico AS
@@ -182,11 +183,7 @@ SELECT
         THEN TRUE
         ELSE FALSE
     END AS foi_reatribuida,
-    CASE os.prioridade
-        WHEN 0 THEN 'Alta'
-        WHEN 1 THEN 'Média'
-        WHEN 2 THEN 'Baixa'
-    END AS prioridade_nome
+    public.traduzir_prioridade(os.prioridade) AS prioridade_nome
 FROM ordem_servico os
 JOIN problema p
     ON p.id = os.problema_id

@@ -28,7 +28,7 @@
 --   1=Sala de Aula, 2=Laboratório, 3=Depto. Administrativo,
 --   4=Auditório, 5=Almoxarifado, 6=Área Comum
 -- problema.status:
---   0=Pendente, 1=Aprovado, 2=Reprovado
+--   0=Pendente, 1=Reprovado, 2=Aprovado
 -- observacao_conclusao.dificuldade:
 --   1=Fácil, 2=Médio, 3=Difícil
 -- ocorrencia.prioridade / ordem_servico.prioridade:
@@ -377,9 +377,9 @@ SELECT
         u.data_criacao + INTERVAL '1 day'
     ),
     CASE
-        WHEN n <= 160 THEN 1
+        WHEN n <= 160 THEN 2
         WHEN n <= 208 THEN 0
-        ELSE 2
+        ELSE 1
     END
 FROM generate_series(1, 240) AS n
 JOIN local_unidade l ON l.id = ((n - 1) % 144) + 1
@@ -442,7 +442,7 @@ WITH base AS (
         ) AS criada_em
     FROM problema p
     JOIN local_unidade l ON l.id = p.local_unidade_id
-    WHERE p.id <= 160 AND p.status = 1
+    WHERE p.id <= 160 AND p.status = 2
 )
 INSERT INTO ordem_servico (
     id, problema_id, usuario_id, status_ordem_servico,
@@ -945,8 +945,8 @@ BEGIN
 
     IF EXISTS (
         SELECT 1 FROM problema
-        WHERE (status = 2 AND motivo_recusa IS NULL)
-           OR (status <> 2 AND motivo_recusa IS NOT NULL)
+        WHERE (status = 1 AND motivo_recusa IS NULL)
+           OR (status <> 1 AND motivo_recusa IS NOT NULL)
     ) THEN
         RAISE EXCEPTION 'Motivo de recusa incompatível com o status do problema.';
     END IF;
@@ -960,10 +960,10 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM ordem_servico os
         JOIN problema p ON p.id = os.problema_id
-        WHERE p.status <> 1
+        WHERE p.status <> 2
     ) OR EXISTS (
         SELECT 1 FROM problema p
-        WHERE p.status = 1
+        WHERE p.status = 2
           AND NOT EXISTS (SELECT 1 FROM ordem_servico os WHERE os.problema_id = p.id)
     ) THEN
         RAISE EXCEPTION 'A massa deve conter uma OS para cada problema aprovado, e apenas para aprovados.';

@@ -49,8 +49,8 @@
 
 - problema.status:
   0 = Pendente
-  1 = Aprovado
-  2 = Reprovado
+  1 = Reprovado
+  2 = Aprovado
 
 - observacao_conclusao.dificuldade:
   1 = Fácil

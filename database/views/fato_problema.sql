@@ -29,12 +29,12 @@ SELECT
         ELSE FALSE
     END AS esta_pendente,
     CASE
-        WHEN p.status = 1
+        WHEN p.status = 2
         THEN TRUE
         ELSE FALSE
     END AS esta_aprovado,
     CASE
-        WHEN p.status = 2
+        WHEN p.status = 1
         THEN TRUE
         ELSE FALSE
     END AS esta_reprovado,

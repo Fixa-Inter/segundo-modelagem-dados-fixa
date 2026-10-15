@@ -25,8 +25,8 @@ CREATE TABLE problema (
     status                   INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT ck_status_problema_0_a_2 CHECK (status BETWEEN 0 AND 2),
     CONSTRAINT ck_motivo_recusa_status_recusado CHECK (
-        (status = 2 AND motivo_recusa IS NOT NULL)
+        (status = 1 AND motivo_recusa IS NOT NULL)
         OR
-        (status <> 2 AND motivo_recusa IS NULL)
+        (status <> 1 AND motivo_recusa IS NULL)
     )
 );

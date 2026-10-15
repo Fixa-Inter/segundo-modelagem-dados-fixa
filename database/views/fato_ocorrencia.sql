@@ -9,6 +9,7 @@
  * Dependências:
  * - ocorrencia
  * - local_unidade
+ * - public.traduzir_prioridade(INTEGER)
  */
 
 CREATE OR REPLACE VIEW fato_ocorrencia AS
@@ -24,11 +25,7 @@ SELECT
     o.prioridade,
     o.esta_ativo,
     1::INTEGER AS quantidade_ocorrencia,
-    CASE o.prioridade
-        WHEN 0 THEN 'Alta'
-        WHEN 1 THEN 'Média'
-        WHEN 2 THEN 'Baixa'
-    END AS prioridade_nome
+    public.traduzir_prioridade(o.prioridade) AS prioridade_nome
 FROM ocorrencia o
 JOIN local_unidade le
     ON le.id = o.local_unidade_id;

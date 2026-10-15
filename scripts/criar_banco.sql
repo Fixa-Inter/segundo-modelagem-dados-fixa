@@ -71,7 +71,8 @@
 
 \echo '2. Criando funcoes...'
 
--- Funções independentes serão adicionadas aqui.
+\ir ../database/functions/traduzir_enums.sql
+
 -- As funções utilizadas pelas triggers de auditoria
 -- estão dentro dos próprios arquivos de trigger.
 
