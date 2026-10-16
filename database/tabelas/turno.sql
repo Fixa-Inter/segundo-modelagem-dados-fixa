@@ -10,8 +10,8 @@
  */
 
 CREATE TABLE turno(
-    id                   SERIAL PRIMARY KEY,
-    unidade_id    INTEGER REFERENCES unidade(id) NOT NULL,
+    id                   BIGSERIAL PRIMARY KEY,
+    unidade_id    BIGINT REFERENCES unidade(id) NOT NULL,
     nome                 VARCHAR(100) NOT NULL,
     hora_inicio          INTEGER NOT NULL,
     hora_fim             INTEGER NOT NULL,

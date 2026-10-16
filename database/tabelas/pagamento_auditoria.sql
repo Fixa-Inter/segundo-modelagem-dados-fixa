@@ -10,8 +10,8 @@
  */
 
 CREATE TABLE pagamento_auditoria (
-    id                SERIAL PRIMARY KEY,
-    pagamento_id      INTEGER NOT NULL,
+    id                BIGSERIAL PRIMARY KEY,
+    pagamento_id      BIGINT NOT NULL,
     operacao          TEXT NOT NULL,
     dados_anteriores  JSONB,
     dados_novos       JSONB,

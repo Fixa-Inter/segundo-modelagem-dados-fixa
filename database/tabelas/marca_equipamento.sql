@@ -9,9 +9,10 @@
  */
 
 CREATE TABLE marca_equipamento(
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     nome         VARCHAR(100) NOT NULL,
     descricao    VARCHAR(255) NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE
 );

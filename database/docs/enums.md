@@ -39,7 +39,7 @@
   9 = Iluminação
   10 = Limpeza e Conservação
 
-- local_endereco.tipo_local_endereco:
+- local_unidade.tipo_local_unidade:
   1 = Sala de Aula
   2 = Laboratório
   3 = Depto. Administrativo
@@ -49,8 +49,8 @@
 
 - problema.status:
   0 = Pendente
-  1 = Aprovado
-  2 = Reprovado
+  1 = Reprovado
+  2 = Aprovado
 
 - observacao_conclusao.dificuldade:
   1 = Fácil

@@ -74,7 +74,7 @@ Este documento apresenta os padrões de modelagem de banco de dados adotados no 
 ## **6. Chaves Primárias**
 
 ### **Regra**
-- Toda chave primária deve ser nomeada como **id**.
+- Toda chave primária deve ser nomeada como **id**, com tipo **BIGSERIAL**.
 
 | **Tabela**: `usuario` | **Correto** | **Incorreto**       |
 |-----------------------|-------------|---------------------|
@@ -85,7 +85,7 @@ Este documento apresenta os padrões de modelagem de banco de dados adotados no 
 ## **7. Chaves Estrangeiras**
 
 ### **Regra**
-- Use o padrão: **nome_da_tabela_id**.
+- Use o padrão: **nome_da_tabela_id**, com tipo **BIGINT**.
 
 | **Tabela**: `unidade` | **Correto** | **Incorreto**       |
 |------------------------|-------------|---------------------|

@@ -10,8 +10,8 @@
  */
 
 CREATE TABLE ordem_servico_status_auditoria (
-    id SERIAL PRIMARY KEY,
-    ordem_servico_id   INTEGER NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    ordem_servico_id   BIGINT NOT NULL REFERENCES ordem_servico(id) ON DELETE CASCADE,
     status_anterior    INTEGER NOT NULL,
     status_novo        INTEGER NOT NULL,
     data_alteracao     TIMESTAMP NOT NULL DEFAULT NOW(),

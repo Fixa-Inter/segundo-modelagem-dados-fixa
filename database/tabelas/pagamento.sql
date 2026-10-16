@@ -9,8 +9,8 @@
  */
 
 CREATE TABLE pagamento (
-    id                SERIAL PRIMARY KEY,
-    contrato_id       INTEGER NOT NULL REFERENCES contrato(id),
+    id                BIGSERIAL PRIMARY KEY,
+    contrato_id       BIGINT NOT NULL REFERENCES contrato(id),
     data_pagamento    TIMESTAMP NOT NULL,
     valor_pago        DECIMAL(10, 2) NOT NULL,
     status            INTEGER DEFAULT 1,

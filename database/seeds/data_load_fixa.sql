@@ -24,11 +24,11 @@
 --   1=Elétrica, 2=Hidráulica, 3=Mecânica, 4=Informática,
 --   5=Mobiliário, 6=Climatização, 7=Rede e Conectividade,
 --   8=Segurança, 9=Iluminação, 10=Limpeza e Conservação
--- local_endereco.tipo_local_endereco:
+-- local_unidade.tipo_local_unidade:
 --   1=Sala de Aula, 2=Laboratório, 3=Depto. Administrativo,
 --   4=Auditório, 5=Almoxarifado, 6=Área Comum
 -- problema.status:
---   0=Pendente, 1=Aprovado, 2=Reprovado
+--   0=Pendente, 1=Reprovado, 2=Aprovado
 -- observacao_conclusao.dificuldade:
 --   1=Fácil, 2=Médio, 3=Difícil
 -- ocorrencia.prioridade / ordem_servico.prioridade:
@@ -206,7 +206,7 @@ INSERT INTO aptidao (
     id, usuario_id, categoria_problema, nota, data_criacao, esta_ativo
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY u.id, g)::INTEGER,
+    ROW_NUMBER() OVER (ORDER BY u.id, g)::BIGINT,
     u.id,
     ((u.id + g * 3 - 1) % 10) + 1,
     ROUND((6.0 + ((u.id + g) % 5) * 0.8)::NUMERIC, 2),
@@ -241,8 +241,8 @@ FROM generate_series(1, 60) AS n;
 -- ===================================================
 -- 10. LOCAIS DAS UNIDADES (144) - 6 por unidade
 -- ===================================================
-INSERT INTO local_endereco (
-    id, unidade_id, nome, tipo_local_endereco,
+INSERT INTO local_unidade (
+    id, unidade_id, nome, tipo_local_unidade,
     descricao, data_criacao, esta_ativo
 )
 SELECT
@@ -266,7 +266,7 @@ FROM generate_series(1, 144) AS n;
 -- 11. EVENTOS (72)
 -- ===================================================
 INSERT INTO evento (
-    id, usuario_id, local_endereco_id, titulo, descricao,
+    id, usuario_id, local_unidade_id, titulo, descricao,
     descricao_local, observacao, data_hora_inicio, data_hora_fim, data_criacao
 )
 SELECT
@@ -335,7 +335,7 @@ FROM generate_series(1, 30) AS n;
 -- 15. EQUIPAMENTOS (144) - 1 por local
 -- ===================================================
 INSERT INTO equipamento (
-    id, usuario_id, modelo_equipamento_id, local_endereco_id,
+    id, usuario_id, modelo_equipamento_id, local_unidade_id,
     codigo, data_criacao, esta_ativo
 )
 SELECT
@@ -347,14 +347,14 @@ SELECT
     NOW() - ((140 - (n % 100)) || ' days')::INTERVAL,
     TRUE
 FROM generate_series(1, 144) AS n
-JOIN local_endereco l ON l.id = n;
+JOIN local_unidade l ON l.id = n;
 
 -- ===================================================
 -- 16. PROBLEMAS (240)
 -- 160 aprovados, 48 pendentes e 32 reprovados
 -- ===================================================
 INSERT INTO problema (
-    id, usuario_id, categoria_equipamento_id, local_endereco_id,
+    id, usuario_id, categoria_equipamento_id, local_unidade_id,
     titulo, descricao_problema, descricao_local, motivo_recusa,
     data_criacao, status
 )
@@ -377,19 +377,19 @@ SELECT
         u.data_criacao + INTERVAL '1 day'
     ),
     CASE
-        WHEN n <= 160 THEN 1
+        WHEN n <= 160 THEN 2
         WHEN n <= 208 THEN 0
-        ELSE 2
+        ELSE 1
     END
 FROM generate_series(1, 240) AS n
-JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
+JOIN local_unidade l ON l.id = ((n - 1) % 144) + 1
 JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END;
 
 -- ===================================================
 -- 17. OCORRÊNCIAS (100)
 -- ===================================================
 INSERT INTO ocorrencia (
-    id, usuario_id, local_endereco_id, categoria_equipamento_id,
+    id, usuario_id, local_unidade_id, categoria_equipamento_id,
     categoria_problema, titulo, descricao_ocorrencia,
     descricao_local, prioridade, data_criacao, esta_ativo
 )
@@ -410,7 +410,7 @@ SELECT
     ),
     TRUE
 FROM generate_series(1, 100) AS n
-JOIN local_endereco l ON l.id = ((n - 1) % 144) + 1
+JOIN local_unidade l ON l.id = ((n - 1) % 144) + 1
 JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END;
 
 -- ===================================================
@@ -441,8 +441,8 @@ WITH base AS (
             p.data_criacao + INTERVAL '1 hour'
         ) AS criada_em
     FROM problema p
-    JOIN local_endereco l ON l.id = p.local_endereco_id
-    WHERE p.id <= 160 AND p.status = 1
+    JOIN local_unidade l ON l.id = p.local_unidade_id
+    WHERE p.id <= 160 AND p.status = 2
 )
 INSERT INTO ordem_servico (
     id, problema_id, usuario_id, status_ordem_servico,
@@ -581,7 +581,7 @@ SELECT
     os.data_criacao + INTERVAL '6 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
-JOIN local_endereco l ON l.id = p.local_endereco_id
+JOIN local_unidade l ON l.id = p.local_unidade_id
 WHERE os.id BETWEEN 41 AND 64;
 
 -- 8 OS que foram reatribuídas e depois retornaram ao técnico inicial.
@@ -595,7 +595,7 @@ SELECT
     os.data_criacao + INTERVAL '4 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
-JOIN local_endereco l ON l.id = p.local_endereco_id
+JOIN local_unidade l ON l.id = p.local_unidade_id
 WHERE os.id BETWEEN 65 AND 72;
 
 INSERT INTO ordem_servico_tecnico_auditoria (
@@ -608,7 +608,7 @@ SELECT
     os.data_criacao + INTERVAL '10 hours'
 FROM ordem_servico os
 JOIN problema p ON p.id = os.problema_id
-JOIN local_endereco l ON l.id = p.local_endereco_id
+JOIN local_unidade l ON l.id = p.local_unidade_id
 WHERE os.id BETWEEN 65 AND 72;
 
 -- ===================================================
@@ -653,7 +653,7 @@ INSERT INTO observacao_conclusao (
     id, ordem_servico_id, dificuldade, observacao, data_criacao
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY os.id)::INTEGER,
+    ROW_NUMBER() OVER (ORDER BY os.id)::BIGINT,
     os.id,
     ((os.id - 1) % 3) + 1,
     (ARRAY[
@@ -785,7 +785,7 @@ SELECT setval(pg_get_serial_sequence('pagamento', 'id'), MAX(id), TRUE) FROM pag
 SELECT setval(pg_get_serial_sequence('usuario', 'id'), MAX(id), TRUE) FROM usuario;
 SELECT setval(pg_get_serial_sequence('aptidao', 'id'), MAX(id), TRUE) FROM aptidao;
 SELECT setval(pg_get_serial_sequence('feedback', 'id'), MAX(id), TRUE) FROM feedback;
-SELECT setval(pg_get_serial_sequence('local_endereco', 'id'), MAX(id), TRUE) FROM local_endereco;
+SELECT setval(pg_get_serial_sequence('local_unidade', 'id'), MAX(id), TRUE) FROM local_unidade;
 SELECT setval(pg_get_serial_sequence('evento', 'id'), MAX(id), TRUE) FROM evento;
 SELECT setval(pg_get_serial_sequence('categoria_equipamento', 'id'), MAX(id), TRUE) FROM categoria_equipamento;
 SELECT setval(pg_get_serial_sequence('marca_equipamento', 'id'), MAX(id), TRUE) FROM marca_equipamento;
@@ -825,7 +825,7 @@ BEGIN
         (SELECT COUNT(*) FROM usuario) +
         (SELECT COUNT(*) FROM aptidao) +
         (SELECT COUNT(*) FROM feedback) +
-        (SELECT COUNT(*) FROM local_endereco) +
+        (SELECT COUNT(*) FROM local_unidade) +
         (SELECT COUNT(*) FROM evento) +
         (SELECT COUNT(*) FROM categoria_equipamento) +
         (SELECT COUNT(*) FROM marca_equipamento) +
@@ -869,8 +869,8 @@ BEGIN
         RAISE EXCEPTION 'Valor inválido em categoria_problema.';
     END IF;
 
-    IF EXISTS (SELECT 1 FROM local_endereco WHERE tipo_local_endereco NOT BETWEEN 1 AND 6) THEN
-        RAISE EXCEPTION 'Valor inválido em local_endereco.tipo_local_endereco.';
+    IF EXISTS (SELECT 1 FROM local_unidade WHERE tipo_local_unidade NOT BETWEEN 1 AND 6) THEN
+        RAISE EXCEPTION 'Valor inválido em local_unidade.tipo_local_unidade.';
     END IF;
 
     IF EXISTS (SELECT 1 FROM problema WHERE status NOT BETWEEN 0 AND 2) THEN
@@ -906,7 +906,7 @@ BEGIN
             ('super_admin', 3), ('instituicao', 12), ('unidade', 24),
             ('plano', 4), ('contrato', 24), ('pagamento', 72),
             ('usuario', 144), ('aptidao', 144), ('feedback', 60),
-            ('local_endereco', 144), ('evento', 72),
+            ('local_unidade', 144), ('evento', 72),
             ('categoria_equipamento', 10), ('marca_equipamento', 8),
             ('modelo_equipamento', 30), ('equipamento', 144),
             ('problema', 240), ('ocorrencia', 100),
@@ -925,7 +925,7 @@ BEGIN
 
         sequence_id := pg_get_serial_sequence(verificacao.tabela, 'id');
         IF sequence_id IS NULL THEN
-            RAISE EXCEPTION 'Sequence SERIAL não encontrada para %.', verificacao.tabela;
+            RAISE EXCEPTION 'Sequence BIGSERIAL não encontrada para %.', verificacao.tabela;
         END IF;
         EXECUTE format('SELECT last_value, is_called FROM %s', sequence_id::REGCLASS)
             INTO sequence_ultimo_id, sequence_chamada;
@@ -945,8 +945,8 @@ BEGIN
 
     IF EXISTS (
         SELECT 1 FROM problema
-        WHERE (status = 2 AND motivo_recusa IS NULL)
-           OR (status <> 2 AND motivo_recusa IS NOT NULL)
+        WHERE (status = 1 AND motivo_recusa IS NULL)
+           OR (status <> 1 AND motivo_recusa IS NOT NULL)
     ) THEN
         RAISE EXCEPTION 'Motivo de recusa incompatível com o status do problema.';
     END IF;
@@ -960,10 +960,10 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM ordem_servico os
         JOIN problema p ON p.id = os.problema_id
-        WHERE p.status <> 1
+        WHERE p.status <> 2
     ) OR EXISTS (
         SELECT 1 FROM problema p
-        WHERE p.status = 1
+        WHERE p.status = 2
           AND NOT EXISTS (SELECT 1 FROM ordem_servico os WHERE os.problema_id = p.id)
     ) THEN
         RAISE EXCEPTION 'A massa deve conter uma OS para cada problema aprovado, e apenas para aprovados.';
@@ -1130,12 +1130,12 @@ BEGIN
     ) OR EXISTS (
         SELECT 1 FROM problema p
         JOIN usuario u ON u.id = p.usuario_id
-        JOIN local_endereco l ON l.id = p.local_endereco_id
+        JOIN local_unidade l ON l.id = p.local_unidade_id
         WHERE p.data_criacao < GREATEST(u.data_criacao, l.data_criacao) OR p.data_criacao > NOW()
     ) OR EXISTS (
         SELECT 1 FROM ocorrencia o
         JOIN usuario u ON u.id = o.usuario_id
-        JOIN local_endereco l ON l.id = o.local_endereco_id
+        JOIN local_unidade l ON l.id = o.local_unidade_id
         WHERE o.data_criacao < GREATEST(u.data_criacao, l.data_criacao) OR o.data_criacao > NOW()
     ) OR EXISTS (
         SELECT 1 FROM ordem_servico os JOIN problema p ON p.id = os.problema_id
@@ -1185,7 +1185,7 @@ UNION ALL SELECT 'pagamento', COUNT(*) FROM pagamento
 UNION ALL SELECT 'usuario', COUNT(*) FROM usuario
 UNION ALL SELECT 'aptidao', COUNT(*) FROM aptidao
 UNION ALL SELECT 'feedback', COUNT(*) FROM feedback
-UNION ALL SELECT 'local_endereco', COUNT(*) FROM local_endereco
+UNION ALL SELECT 'local_unidade', COUNT(*) FROM local_unidade
 UNION ALL SELECT 'evento', COUNT(*) FROM evento
 UNION ALL SELECT 'categoria_equipamento', COUNT(*) FROM categoria_equipamento
 UNION ALL SELECT 'marca_equipamento', COUNT(*) FROM marca_equipamento

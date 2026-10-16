@@ -10,7 +10,7 @@
  */
 
 CREATE TABLE super_admin(
-    id         SERIAL PRIMARY KEY,
+    id         BIGSERIAL PRIMARY KEY,
     nome       VARCHAR(100) NOT NULL,
     email      VARCHAR(100) NOT NULL UNIQUE,
     senha_hash      VARCHAR(255) NOT NULL,

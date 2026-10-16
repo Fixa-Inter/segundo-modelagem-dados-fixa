@@ -9,16 +9,16 @@
  * Dependências:
  * - usuario
  * - unidade
- * - local_endereco
+ * - local_unidade
  * - categoria_equipamento
  * - ocorrencia
  * - foto
  */
 
 CREATE OR REPLACE PROCEDURE registrar_ocorrencia(
-    p_usuario_id INTEGER,
-    p_local_id INTEGER,
-    p_categoria_equipamento_id INTEGER,
+    p_usuario_id BIGINT,
+    p_local_id BIGINT,
+    p_categoria_equipamento_id BIGINT,
     p_categoria_problema INTEGER,
     p_prioridade INTEGER,
     p_titulo VARCHAR,
@@ -29,7 +29,7 @@ CREATE OR REPLACE PROCEDURE registrar_ocorrencia(
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_ocorrencia_id INTEGER;
+    v_ocorrencia_id BIGINT;
 BEGIN
     IF NOT EXISTS (
         SELECT 1
@@ -57,7 +57,7 @@ BEGIN
 
     IF NOT EXISTS (
         SELECT 1
-        FROM local_endereco le
+        FROM local_unidade le
         JOIN unidade u ON u.id = le.unidade_id
         WHERE le.id = p_local_id
     ) THEN
@@ -90,7 +90,7 @@ BEGIN
 
     INSERT INTO ocorrencia (
         usuario_id,
-        local_endereco_id,
+        local_unidade_id,
         categoria_equipamento_id,
         categoria_problema,
         prioridade,

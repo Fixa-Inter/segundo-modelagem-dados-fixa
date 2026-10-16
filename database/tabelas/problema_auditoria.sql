@@ -10,8 +10,8 @@
  */
 
 CREATE TABLE problema_auditoria (
-    id                SERIAL PRIMARY KEY,
-    problema_id       INTEGER NOT NULL,
+    id                BIGSERIAL PRIMARY KEY,
+    problema_id       BIGINT NOT NULL,
     operacao          TEXT NOT NULL,
     dados_anteriores  JSONB,
     dados_novos       JSONB,

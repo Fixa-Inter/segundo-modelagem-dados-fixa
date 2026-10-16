@@ -13,7 +13,7 @@
  */
 
 CREATE OR REPLACE PROCEDURE registrar_observacao_conclusao(
-    p_ordem_servico_id INTEGER,
+    p_ordem_servico_id BIGINT,
     p_dificuldade INTEGER,
     p_observacao VARCHAR,
     p_fotos_urls VARCHAR[] DEFAULT NULL
@@ -21,7 +21,7 @@ CREATE OR REPLACE PROCEDURE registrar_observacao_conclusao(
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_observacao_conclusao_id INTEGER;
+    v_observacao_conclusao_id BIGINT;
 BEGIN
     IF NOT EXISTS (
         SELECT 1

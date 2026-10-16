@@ -1,4 +1,5 @@
 \set ON_ERROR_STOP on
+\encoding UTF8
 
 \echo '=============================='
 \echo 'CRIANDO BANCO FIXA'
@@ -27,7 +28,7 @@
 \ir ../database/tabelas/feedback.sql
 
 -- LOCAIS / EVENTOS
-\ir ../database/tabelas/local_endereco.sql
+\ir ../database/tabelas/local_unidade.sql
 \ir ../database/tabelas/evento.sql
 
 -- EQUIPAMENTOS
@@ -70,7 +71,8 @@
 
 \echo '2. Criando funcoes...'
 
--- Funções independentes serão adicionadas aqui.
+\ir ../database/functions/traduzir_enums.sql
+
 -- As funções utilizadas pelas triggers de auditoria
 -- estão dentro dos próprios arquivos de trigger.
 
@@ -92,6 +94,7 @@
 
 \echo '4. Criando triggers...'
 
+\ir ../database/triggers/atualizar_data_atualizacao.sql
 \ir ../database/triggers/auditar_status_ordem_servico.sql
 \ir ../database/triggers/auditar_tecnico_ordem_servico.sql
 \ir ../database/triggers/auditar_pagamento.sql

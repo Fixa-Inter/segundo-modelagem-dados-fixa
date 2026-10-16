@@ -15,12 +15,12 @@
  */
 
 CREATE TABLE foto(
-    id                       SERIAL PRIMARY KEY,
-    problema_id              INTEGER REFERENCES problema(id),
-    ocorrencia_id            INTEGER REFERENCES ocorrencia(id),
-    ordem_servico_id         INTEGER REFERENCES ordem_servico(id) ON DELETE CASCADE,
-    observacao_conclusao_id  INTEGER REFERENCES observacao_conclusao(id),
-    usuario_id               INTEGER REFERENCES usuario(id),
+    id                       BIGSERIAL PRIMARY KEY,
+    problema_id              BIGINT REFERENCES problema(id),
+    ocorrencia_id            BIGINT REFERENCES ocorrencia(id),
+    ordem_servico_id         BIGINT REFERENCES ordem_servico(id) ON DELETE CASCADE,
+    observacao_conclusao_id  BIGINT REFERENCES observacao_conclusao(id),
+    usuario_id               BIGINT REFERENCES usuario(id),
     url                      VARCHAR(255) NOT NULL,
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     data_criacao             TIMESTAMP NOT NULL DEFAULT NOW(),

@@ -9,7 +9,7 @@
  */
 
 CREATE TABLE instituicao (
-    id                 SERIAL PRIMARY KEY,
+    id                 BIGSERIAL PRIMARY KEY,
     nome               VARCHAR(100) NOT NULL,
     tipo_instituicao   INTEGER NOT NULL,
     email_corporativo  VARCHAR(100) UNIQUE,

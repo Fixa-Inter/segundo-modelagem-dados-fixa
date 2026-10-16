@@ -10,10 +10,11 @@
  */
 
 CREATE TABLE categoria_equipamento(
-    id           SERIAL PRIMARY KEY,
-    usuario_id   INTEGER NOT NULL REFERENCES usuario(id),
+    id           BIGSERIAL PRIMARY KEY,
+    usuario_id   BIGINT NOT NULL REFERENCES usuario(id),
     nome         VARCHAR(100) NOT NULL,
     descricao    VARCHAR(255) NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     esta_ativo   BOOLEAN NOT NULL DEFAULT TRUE
 );

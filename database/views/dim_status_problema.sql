@@ -6,17 +6,11 @@
  * registrados no sistema.
  *
  * Dependências:
- * - Nenhuma
+ * - public.traduzir_status_problema(INTEGER)
  */
 
 CREATE OR REPLACE VIEW dim_status_problema AS
-SELECT *
-FROM (
-    VALUES
-        (0, 'Pendente'),
-        (1, 'Aprovado'),
-        (2, 'Reprovado')
-) AS status_problema (
+SELECT
     status_problema_id,
-    nome
-);
+    public.traduzir_status_problema(status_problema_id) AS nome
+FROM generate_series(0, 2) AS status_problema(status_problema_id);
