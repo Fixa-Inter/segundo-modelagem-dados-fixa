@@ -1,5 +1,5 @@
 /**
- * Procedure: cadastrar_problema
+ * Procedure: registrar_problema
  *
  * Descrição:
  * Registra um problema pendente enviado por um usuário ativo,
@@ -15,7 +15,7 @@
  * - foto
  */
 
-CREATE OR REPLACE PROCEDURE cadastrar_problema(
+CREATE OR REPLACE PROCEDURE registrar_problema(
     p_usuario_id BIGINT,
     p_local_id BIGINT,
     p_categoria_equipamento_id BIGINT,
