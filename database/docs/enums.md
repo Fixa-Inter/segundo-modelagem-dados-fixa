@@ -51,6 +51,7 @@
   0 = Pendente
   1 = Reprovado
   2 = Aprovado
+  3 = Concluída
 
 - observacao_conclusao.dificuldade:
   1 = Fácil
