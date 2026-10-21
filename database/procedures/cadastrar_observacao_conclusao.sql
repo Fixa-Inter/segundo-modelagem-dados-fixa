@@ -6,16 +6,20 @@
  * com dificuldade entre os valores oficiais de 1 a 3
  * e fotos opcionais por URL.
  *
+ * Saída:
+ * - p_observacao_conclusao_id: ID do registro criado.
+ *
  * Dependências:
  * - ordem_servico
  * - observacao_conclusao
  * - foto
  */
 
-CREATE OR REPLACE PROCEDURE registrar_observacao_conclusao(
+CREATE OR REPLACE PROCEDURE cadastrar_observacao_conclusao(
     p_ordem_servico_id BIGINT,
     p_dificuldade INTEGER,
     p_observacao VARCHAR,
+    OUT p_observacao_conclusao_id BIGINT,
     p_fotos_urls VARCHAR[] DEFAULT NULL
 )
 LANGUAGE plpgsql
@@ -67,6 +71,8 @@ BEGIN
     INSERT INTO foto (observacao_conclusao_id, url)
     SELECT v_observacao_conclusao_id, url
     FROM UNNEST(p_fotos_urls) AS fotos(url);
+
+    p_observacao_conclusao_id := v_observacao_conclusao_id;
 END;
 $$;
 
