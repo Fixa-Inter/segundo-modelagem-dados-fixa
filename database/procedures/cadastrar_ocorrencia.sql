@@ -6,6 +6,9 @@
  * respeitando o local, a unidade e os códigos oficiais,
  * com fotos opcionais por URL.
  *
+ * Saída:
+ * - p_ocorrencia_id: ID do registro criado.
+ *
  * Dependências:
  * - usuario
  * - unidade
@@ -15,7 +18,7 @@
  * - foto
  */
 
-CREATE OR REPLACE PROCEDURE registrar_ocorrencia(
+CREATE OR REPLACE PROCEDURE cadastrar_ocorrencia(
     p_usuario_id BIGINT,
     p_local_id BIGINT,
     p_categoria_equipamento_id BIGINT,
@@ -24,6 +27,7 @@ CREATE OR REPLACE PROCEDURE registrar_ocorrencia(
     p_titulo VARCHAR,
     p_descricao_ocorrencia VARCHAR,
     p_descricao_local VARCHAR,
+    OUT p_ocorrencia_id BIGINT,
     p_fotos_urls VARCHAR[] DEFAULT NULL
 )
 LANGUAGE plpgsql
@@ -113,6 +117,8 @@ BEGIN
     INSERT INTO foto (ocorrencia_id, url)
     SELECT v_ocorrencia_id, url
     FROM UNNEST(p_fotos_urls) AS fotos(url);
+
+    p_ocorrencia_id := v_ocorrencia_id;
 END;
 $$;
 

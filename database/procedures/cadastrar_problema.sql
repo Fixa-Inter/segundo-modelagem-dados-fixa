@@ -1,10 +1,13 @@
 /**
- * Procedure: registrar_problema
+ * Procedure: cadastrar_problema
  *
  * Descrição:
  * Registra um problema pendente enviado por um usuário ativo,
- * com local e categoria válidos e fotos opcionais por URL,
+ * com local e categoria válidos e pelo menos uma foto por URL,
  * sem criar ordem de serviço.
+ *
+ * Saída:
+ * - p_problema_id: ID do registro criado.
  *
  * Dependências:
  * - usuario
@@ -15,14 +18,15 @@
  * - foto
  */
 
-CREATE OR REPLACE PROCEDURE registrar_problema(
+CREATE OR REPLACE PROCEDURE cadastrar_problema(
     p_usuario_id BIGINT,
     p_local_id BIGINT,
     p_categoria_equipamento_id BIGINT,
     p_titulo VARCHAR,
     p_descricao_problema VARCHAR,
     p_descricao_local VARCHAR,
-    p_fotos_urls VARCHAR[] DEFAULT NULL
+    OUT p_problema_id BIGINT,
+    p_fotos_urls VARCHAR[]
 )
 LANGUAGE plpgsql
 AS $$
@@ -62,6 +66,10 @@ BEGIN
         RAISE EXCEPTION 'Categoria de equipamento não encontrada.';
     END IF;
 
+    IF p_fotos_urls IS NULL OR cardinality(p_fotos_urls) = 0 THEN
+        RAISE EXCEPTION 'É obrigatório informar pelo menos uma foto.';
+    END IF;
+
     IF EXISTS (
         SELECT 1
         FROM UNNEST(p_fotos_urls) AS fotos(url)
@@ -95,6 +103,8 @@ BEGIN
     INSERT INTO foto (problema_id, url)
     SELECT v_problema_id, url
     FROM UNNEST(p_fotos_urls) AS fotos(url);
+
+    p_problema_id := v_problema_id;
 END;
 $$;
 
