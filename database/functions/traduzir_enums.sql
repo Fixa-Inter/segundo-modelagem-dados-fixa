@@ -142,6 +142,7 @@ AS $$
         WHEN 0 THEN 'Pendente'
         WHEN 1 THEN 'Reprovado'
         WHEN 2 THEN 'Aprovado'
+        WHEN 3 THEN 'Concluído'
         ELSE NULL
     END;
 $$;

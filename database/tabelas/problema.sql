@@ -23,7 +23,7 @@ CREATE TABLE problema (
     data_atualizacao         TIMESTAMP DEFAULT NOW(),
     esta_ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     status                   INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT ck_status_problema_0_a_2 CHECK (status BETWEEN 0 AND 2),
+    CONSTRAINT ck_status_problema_0_a_3 CHECK (status BETWEEN 0 AND 3),
     CONSTRAINT ck_motivo_recusa_status_recusado CHECK (
         (status = 1 AND motivo_recusa IS NOT NULL)
         OR

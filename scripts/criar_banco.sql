@@ -100,6 +100,7 @@
 \ir ../database/triggers/auditar_pagamento.sql
 \ir ../database/triggers/auditar_problema.sql
 \ir ../database/triggers/auditar_usuario.sql
+\ir ../database/triggers/atualizar_problema_conclusao_os.sql
 
 
 -- ===================================================
