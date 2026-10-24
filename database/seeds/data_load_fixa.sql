@@ -3,7 +3,7 @@
 -- Requisito: carga inicial de pelo menos 500 registros
 --            verossímeis para testes de volume.
 --
--- Total aproximado gerado: 2.706 registros.
+-- Total aproximado gerado: 2.394 registros.
 -- Execução esperada: banco recém-criado e vazio.
 --
 -- Senha padrão de TODOS os usuários e super admins: 1234
@@ -50,53 +50,28 @@ INSERT INTO super_admin (id, nome, email, senha_hash, esta_ativo) VALUES
 (3, 'Marcelo Nogueira', 'marcelo.nogueira@fixa.com.br', '$2b$12$vo9ehiXYWpE2DoTvSHyVme8BuS2zh8nO5z9O5VfqeRZ5DoEfzhlIe', TRUE);
 
 -- ===================================================
--- 2. INSTITUIÇÃO (12)
+-- 2. INSTITUIÇÃO (3)
 -- ===================================================
-INSERT INTO instituicao (
-    id, nome, tipo_instituicao, email_corporativo,
-    dominio_email, data_criacao, esta_ativo
-)
-SELECT
-    n,
-    (ARRAY[
-        'Colégio Horizonte', 'Faculdade Vértice', 'Indústrias Aurora',
-        'Secretaria Municipal de Obras', 'Escola Nova Geração', 'Universidade Integra',
-        'Grupo Logística Sul', 'Prefeitura de Vila Serena', 'Colégio Monte Azul',
-        'Centro Universitário Alpha', 'TechParts Brasil', 'Instituto Municipal de Educação'
-    ])[n],
-    ((n - 1) % 4) + 1,
-    'contato' || n || '@instituicao' || n || '.com.br',
-    'instituicao' || n || '.com.br',
-    NOW() - ((420 - n * 12) || ' days')::INTERVAL,
-    TRUE
-FROM generate_series(1, 12) AS n;
+INSERT INTO instituicao (id, nome, tipo_instituicao, email_corporativo, dominio_email, data_criacao, esta_ativo) VALUES
+(1, 'Colégio Horizonte', 1, 'contato@horizonte.example', 'horizonte.example', NOW() - INTERVAL '420 days', TRUE),
+(2, 'Faculdade Vértice', 2, 'contato@vertice.example', 'vertice.example', NOW() - INTERVAL '420 days', TRUE),
+(3, 'Indústrias Aurora', 3, 'contato@aurora.example', 'aurora.example', NOW() - INTERVAL '420 days', TRUE);
 
 -- ===================================================
--- 3. UNIDADE (24) - 2 unidades por instituição
+-- 3. UNIDADE (9) - 3 unidades por instituição
 -- ===================================================
-INSERT INTO unidade (
-    id, instituicao_id, nome, cnpj, logradouro, numero, complemento,
-    bairro, cidade, estado, cep, data_criacao, esta_ativo
-)
-SELECT
-    n,
-    ((n - 1) / 2) + 1,
-    'Unidade ' || n,
-    LPAD((12000000000000 + n * 7919)::TEXT, 14, '0'),
-    (ARRAY[
-        'Rua das Acácias', 'Avenida Paulista', 'Rua Sete de Setembro',
-        'Avenida Brasil', 'Rua XV de Novembro', 'Rua das Palmeiras',
-        'Avenida Ipiranga', 'Rua Marechal Deodoro'
-    ])[((n - 1) % 8) + 1],
-    (100 + n * 7)::TEXT,
-    CASE WHEN n % 3 = 0 THEN 'Bloco ' || CHR(64 + ((n - 1) % 5) + 1) ELSE NULL END,
-    (ARRAY['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Boa Vista', 'Vila Industrial'])[((n - 1) % 6) + 1],
-    (ARRAY['São Paulo', 'Campinas', 'Osasco', 'Barueri', 'Santo André', 'Guarulhos'])[((n - 1) % 6) + 1],
-    'SP',
-    LPAD((6000000 + n * 173)::TEXT, 8, '0'),
-    NOW() - ((360 - n * 8) || ' days')::INTERVAL,
-    TRUE
-FROM generate_series(1, 24) AS n;
+-- Endereços e identificadores sintéticos, exclusivamente para teste.
+INSERT INTO unidade (id, instituicao_id, nome, cnpj, logradouro, numero, complemento, bairro, cidade, estado, cep, data_criacao, esta_ativo) VALUES
+(1, 1, 'Unidade Escolar Centro', '12000000007919', 'Rua das Acácias', '107', NULL, 'Centro', 'São Paulo', 'SP', '06000173', NOW() - INTERVAL '300 days', TRUE),
+(2, 1, 'Unidade Escolar Bela Vista', '12000000015838', 'Rua dos Ipês', '114', NULL, 'Bela Vista', 'São Paulo', 'SP', '06000346', NOW() - INTERVAL '300 days', TRUE),
+(3, 1, 'Unidade Escolar Campinas', '12000000023757', 'Rua das Palmeiras', '121', NULL, 'Cambuí', 'Campinas', 'SP', '06000519', NOW() - INTERVAL '300 days', TRUE),
+(4, 2, 'Campus Centro', '12000000071271', 'Rua das Acácias', '163', NULL, 'Centro', 'São Paulo', 'SP', '06001557', NOW() - INTERVAL '300 days', TRUE),
+(5, 2, 'Campus Bela Vista', '12000000079190', 'Rua dos Ipês', '170', NULL, 'Bela Vista', 'São Paulo', 'SP', '06001730', NOW() - INTERVAL '300 days', TRUE),
+(6, 2, 'Campus Campinas', '12000000087109', 'Rua das Palmeiras', '177', NULL, 'Cambuí', 'Campinas', 'SP', '06001903', NOW() - INTERVAL '300 days', TRUE),
+(7, 3, 'Complexo Industrial Centro', '12000000134623', 'Rua das Acácias', '219', NULL, 'Centro', 'São Paulo', 'SP', '06002941', NOW() - INTERVAL '300 days', TRUE),
+(8, 3, 'Complexo Industrial Bela Vista', '12000000142542', 'Rua dos Ipês', '226', NULL, 'Bela Vista', 'São Paulo', 'SP', '06003114', NOW() - INTERVAL '300 days', TRUE),
+(9, 3, 'Complexo Industrial Campinas', '12000000150461', 'Rua das Palmeiras', '233', NULL, 'Cambuí', 'Campinas', 'SP', '06003287', NOW() - INTERVAL '300 days', TRUE);
+
 
 -- ===================================================
 -- 4. PLANOS (4)
@@ -108,7 +83,7 @@ INSERT INTO plano (id, nome, valor, descricao, duracao_meses, data_criacao, esta
 (4, 'Enterprise',   6490.00, 'Operação completa com maior escala e suporte.', 24, NOW() - INTERVAL '400 days', TRUE);
 
 -- ===================================================
--- 5. CONTRATOS (24) - 1 por unidade
+-- 5. CONTRATOS (9) - 1 por unidade
 -- ===================================================
 INSERT INTO contrato (
     id, plano_id, unidade_id, data_inicio, data_fim, status, data_criacao
@@ -125,11 +100,11 @@ SELECT
         ELSE 1
     END,
     NOW() - ((220 - n * 3) || ' days')::INTERVAL
-FROM generate_series(1, 24) AS n
+FROM generate_series(1, 9) AS n
 JOIN plano p ON p.id = ((n - 1) % 4) + 1;
 
 -- ===================================================
--- 6. PAGAMENTOS (72) - 3 por contrato
+-- 6. PAGAMENTOS (27) - 3 por contrato
 -- ===================================================
 INSERT INTO pagamento (
     id, contrato_id, data_pagamento, valor_pago,
@@ -152,7 +127,7 @@ JOIN plano p ON p.id = c.plano_id
 CROSS JOIN generate_series(1, 3) AS parcela;
 
 -- ===================================================
--- 7. USUÁRIOS (144) - 6 por unidade
+-- 7. USUÁRIOS (54) - 6 por unidade
 -- 1 Administrador, 1 Gestor, 2 Técnicos e 2 Solicitantes
 -- ===================================================
 INSERT INTO usuario (
@@ -173,7 +148,7 @@ SELECT
         'Almeida', 'Barbosa', 'Cardoso', 'Dias', 'Esteves', 'Farias',
         'Gonçalves', 'Henriques', 'Lopes', 'Martins', 'Nascimento', 'Oliveira'
     ])[((n * 5 - 1) % 12) + 1],
-    'usuario' || n || '@instituicao' || ((((n - 1) / 6) / 2) + 1) || '.com.br',
+    'usuario' || n || '@' || (SELECT dominio_email FROM instituicao WHERE id = e.instituicao_id),
     CASE ((n - 1) % 6) + 1
         WHEN 1 THEN 1
         WHEN 2 THEN 2
@@ -196,11 +171,11 @@ SELECT
     ),
     TRUE,
     FALSE
-FROM generate_series(1, 144) AS n
+FROM generate_series(1, 54) AS n
 JOIN unidade e ON e.id = ((n - 1) / 6) + 1;
 
 -- ===================================================
--- 8. APTIDÕES (144) - 3 por técnico
+-- 8. APTIDÕES (54) - 3 por técnico
 -- ===================================================
 INSERT INTO aptidao (
     id, usuario_id, categoria_problema, nota, data_criacao, esta_ativo
@@ -222,7 +197,7 @@ WHERE u.tipo_acesso = 3;
 INSERT INTO feedback (id, usuario_id, comentario, ideia_central, data_criacao)
 SELECT
     n,
-    ((n * 7 - 1) % 144) + 1,
+    ((n * 7 - 1) % 54) + 1,
     (ARRAY[
         'O acompanhamento das ordens de serviço está mais simples.',
         'Seria útil receber avisos quando uma OS mudar de status.',
@@ -239,28 +214,911 @@ SELECT
 FROM generate_series(1, 60) AS n;
 
 -- ===================================================
--- 10. LOCAIS DAS UNIDADES (144) - 6 por unidade
+-- 10. LOCAIS DAS UNIDADES (180) - 20 por unidade
 -- ===================================================
-INSERT INTO local_unidade (
-    id, unidade_id, nome, tipo_local_unidade,
-    descricao, data_criacao, esta_ativo
-)
-SELECT
-    n,
-    ((n - 1) / 6) + 1,
-    CASE ((n - 1) % 6) + 1
-        WHEN 1 THEN 'Sala de Aula ' || ((((n - 1) / 6) + 1)::TEXT)
-        WHEN 2 THEN 'Laboratório ' || ((((n - 1) / 6) + 1)::TEXT)
-        WHEN 3 THEN 'Administrativo ' || ((((n - 1) / 6) + 1)::TEXT)
-        WHEN 4 THEN 'Auditório ' || ((((n - 1) / 6) + 1)::TEXT)
-        WHEN 5 THEN 'Almoxarifado ' || ((((n - 1) / 6) + 1)::TEXT)
-        ELSE 'Área Comum ' || ((((n - 1) / 6) + 1)::TEXT)
-    END,
-    ((n - 1) % 6) + 1,
-    'Local cadastrado para controle de manutenção da unidade.',
-    NOW() - ((170 - (n % 100)) || ' days')::INTERVAL,
-    TRUE
-FROM generate_series(1, 144) AS n;
+-- Locais explícitos por unidade; sem generate_series para instituições, unidades ou ambientes.
+INSERT INTO local_unidade (id, unidade_id, nome, tipo_local_unidade, descricao, data_criacao, esta_ativo) VALUES
+-- Sala de Matemática — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(1, 1, 'Sala de Matemática — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Portuguesa — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(2, 1, 'Sala de Língua Portuguesa — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de História e Geografia — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(3, 1, 'Sala de História e Geografia — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Inglesa — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(4, 1, 'Sala de Língua Inglesa — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Artes — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(5, 1, 'Sala de Artes — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ciências — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(6, 1, 'Laboratório de Ciências — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Informática — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(7, 1, 'Laboratório de Informática — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório Maker — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(8, 1, 'Laboratório Maker — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Música — Centro
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(9, 1, 'Sala de Música — Centro', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Apoio Pedagógico — Centro
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(10, 1, 'Sala de Apoio Pedagógico — Centro', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Escolar — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(11, 1, 'Secretaria Escolar — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação Pedagógica — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(12, 1, 'Coordenação Pedagógica — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Professores — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(13, 1, 'Sala dos Professores — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório Escolar — Centro
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(14, 1, 'Auditório Escolar — Centro', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado Didático — Centro
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(15, 1, 'Almoxarifado Didático — Centro', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Educação Física — Centro
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(16, 1, 'Depósito de Educação Física — Centro', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Escolar — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(17, 1, 'Biblioteca Escolar — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio Coberto — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(18, 1, 'Pátio Coberto — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.', NOW() - INTERVAL '170 days', TRUE),
+-- Quadra Poliesportiva — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(19, 1, 'Quadra Poliesportiva — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório Escolar — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(20, 1, 'Refeitório Escolar — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Matemática — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(21, 2, 'Sala de Matemática — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Portuguesa — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(22, 2, 'Sala de Língua Portuguesa — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de História e Geografia — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(23, 2, 'Sala de História e Geografia — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Inglesa — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(24, 2, 'Sala de Língua Inglesa — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Artes — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(25, 2, 'Sala de Artes — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ciências — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(26, 2, 'Laboratório de Ciências — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Informática — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(27, 2, 'Laboratório de Informática — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório Maker — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(28, 2, 'Laboratório Maker — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Música — Bela Vista
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(29, 2, 'Sala de Música — Bela Vista', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Apoio Pedagógico — Bela Vista
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(30, 2, 'Sala de Apoio Pedagógico — Bela Vista', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Escolar — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(31, 2, 'Secretaria Escolar — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação Pedagógica — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(32, 2, 'Coordenação Pedagógica — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Professores — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(33, 2, 'Sala dos Professores — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório Escolar — Bela Vista
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(34, 2, 'Auditório Escolar — Bela Vista', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado Didático — Bela Vista
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(35, 2, 'Almoxarifado Didático — Bela Vista', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Educação Física — Bela Vista
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(36, 2, 'Depósito de Educação Física — Bela Vista', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Escolar — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(37, 2, 'Biblioteca Escolar — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio Coberto — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(38, 2, 'Pátio Coberto — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.', NOW() - INTERVAL '170 days', TRUE),
+-- Quadra Poliesportiva — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(39, 2, 'Quadra Poliesportiva — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório Escolar — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(40, 2, 'Refeitório Escolar — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Matemática — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(41, 3, 'Sala de Matemática — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de álgebra, geometria e resolução de problemas, com quadro e mesas para exercícios em grupo.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Portuguesa — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(42, 3, 'Sala de Língua Portuguesa — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de leitura, interpretação de textos e produção escrita; realização de oficinas de redação.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de História e Geografia — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(43, 3, 'Sala de História e Geografia — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre processos históricos, cartografia e sociedade; análise de mapas e trabalhos de pesquisa.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Língua Inglesa — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(44, 3, 'Sala de Língua Inglesa — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de conversação, compreensão oral e escrita em inglês, com recursos de áudio e projeção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Artes — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(45, 3, 'Sala de Artes — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de desenho, pintura e produção artística; bancadas para trabalhos manuais e guarda de materiais.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ciências — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(46, 3, 'Laboratório de Ciências — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de biologia, química e física; experimentos didáticos supervisionados em bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Informática — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(47, 3, 'Laboratório de Informática — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas de programação e letramento digital; uso de computadores para pesquisa e projetos escolares.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório Maker — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(48, 3, 'Laboratório Maker — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Oficinas de robótica e prototipagem; montagem de circuitos e construção de projetos com orientação docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Música — Campinas
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(49, 3, 'Sala de Música — Campinas', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de percepção musical e prática instrumental; ensaios dos alunos e preparação de apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Apoio Pedagógico — Campinas
+-- Local: Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(50, 3, 'Sala de Apoio Pedagógico — Campinas', 1, 'Bloco A, 1º pavimento. Sala com mesas, quadro e recursos de projeção. Uso: Reforço de leitura e matemática; atendimento de pequenos grupos com atividades adaptadas.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Escolar — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(51, 3, 'Secretaria Escolar — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, emissão de documentos e atendimento às famílias; guarda dos registros acadêmicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação Pedagógica — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(52, 3, 'Coordenação Pedagógica — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de aulas e acompanhamento de aprendizagem; reuniões com professores e responsáveis.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Professores — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(53, 3, 'Sala dos Professores — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Preparação de aulas, correção de atividades e reuniões de equipe durante os intervalos.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório Escolar — Campinas
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(54, 3, 'Auditório Escolar — Campinas', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Apresentações artísticas, palestras e reuniões de pais; espaço com palco e sistema de som.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado Didático — Campinas
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(55, 3, 'Almoxarifado Didático — Campinas', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de livros, papelaria e kits de aula; conferência dos materiais usados pelos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Educação Física — Campinas
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(56, 3, 'Depósito de Educação Física — Campinas', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento de bolas, redes e colchonetes para as aulas práticas e atividades esportivas.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Escolar — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(57, 3, 'Biblioteca Escolar — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Leitura orientada, empréstimo de livros e pesquisa para trabalhos; mesas para estudo individual.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio Coberto — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(58, 3, 'Pátio Coberto — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Recreio, acolhimento dos alunos e atividades coletivas; circulação entre salas e cantina.', NOW() - INTERVAL '170 days', TRUE),
+-- Quadra Poliesportiva — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(59, 3, 'Quadra Poliesportiva — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Aulas de educação física, treinos e jogos escolares; atividades de vôlei, basquete e futsal.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório Escolar — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(60, 3, 'Refeitório Escolar — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Distribuição e consumo das refeições dos alunos; mesas coletivas e área de circulação supervisionada.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Cálculo — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(61, 4, 'Sala de Cálculo — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(62, 4, 'Sala de Gestão — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Projetos Integradores — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(63, 4, 'Sala de Projetos Integradores — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Metodologia Científica — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(64, 4, 'Sala de Metodologia Científica — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Programação — Centro
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(65, 4, 'Laboratório de Programação — Centro', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Redes — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(66, 4, 'Laboratório de Redes — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Eletrônica — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(67, 4, 'Laboratório de Eletrônica — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Física — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(68, 4, 'Laboratório de Física — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Química — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(69, 4, 'Laboratório de Química — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Prototipagem — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(70, 4, 'Laboratório de Prototipagem — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Acadêmica — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(71, 4, 'Secretaria Acadêmica — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação de Cursos — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(72, 4, 'Coordenação de Cursos — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Docentes — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(73, 4, 'Sala dos Docentes — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Defesas — Centro
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(74, 4, 'Auditório de Defesas — Centro', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Laboratórios — Centro
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(75, 4, 'Almoxarifado de Laboratórios — Centro', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.', NOW() - INTERVAL '170 days', TRUE),
+-- Arquivo Acadêmico — Centro
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(76, 4, 'Arquivo Acadêmico — Centro', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Universitária — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(77, 4, 'Biblioteca Universitária — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Estudos Colaborativos — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(78, 4, 'Sala de Estudos Colaborativos — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.', NOW() - INTERVAL '170 days', TRUE),
+-- Praça de Convivência — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(79, 4, 'Praça de Convivência — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.', NOW() - INTERVAL '170 days', TRUE),
+-- Centro de Atendimento ao Estudante — Centro
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(80, 4, 'Centro de Atendimento ao Estudante — Centro', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Cálculo — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(81, 5, 'Sala de Cálculo — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(82, 5, 'Sala de Gestão — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Projetos Integradores — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(83, 5, 'Sala de Projetos Integradores — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Metodologia Científica — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(84, 5, 'Sala de Metodologia Científica — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Programação — Bela Vista
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(85, 5, 'Laboratório de Programação — Bela Vista', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Redes — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(86, 5, 'Laboratório de Redes — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Eletrônica — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(87, 5, 'Laboratório de Eletrônica — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Física — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(88, 5, 'Laboratório de Física — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Química — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(89, 5, 'Laboratório de Química — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Prototipagem — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(90, 5, 'Laboratório de Prototipagem — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Acadêmica — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(91, 5, 'Secretaria Acadêmica — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação de Cursos — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(92, 5, 'Coordenação de Cursos — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Docentes — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(93, 5, 'Sala dos Docentes — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Defesas — Bela Vista
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(94, 5, 'Auditório de Defesas — Bela Vista', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Laboratórios — Bela Vista
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(95, 5, 'Almoxarifado de Laboratórios — Bela Vista', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.', NOW() - INTERVAL '170 days', TRUE),
+-- Arquivo Acadêmico — Bela Vista
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(96, 5, 'Arquivo Acadêmico — Bela Vista', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Universitária — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(97, 5, 'Biblioteca Universitária — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Estudos Colaborativos — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(98, 5, 'Sala de Estudos Colaborativos — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.', NOW() - INTERVAL '170 days', TRUE),
+-- Praça de Convivência — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(99, 5, 'Praça de Convivência — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.', NOW() - INTERVAL '170 days', TRUE),
+-- Centro de Atendimento ao Estudante — Bela Vista
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(100, 5, 'Centro de Atendimento ao Estudante — Bela Vista', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Cálculo — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(101, 6, 'Sala de Cálculo — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de cálculo diferencial, integral e álgebra linear; resolução de exercícios e avaliações.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(102, 6, 'Sala de Gestão — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de administração, gestão de projetos e empreendedorismo; análise de casos em grupos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Projetos Integradores — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(103, 6, 'Sala de Projetos Integradores — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Desenvolvimento de projetos interdisciplinares; reuniões de equipes e orientação com professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Metodologia Científica — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(104, 6, 'Sala de Metodologia Científica — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas de pesquisa acadêmica e escrita científica; elaboração de projetos e artigos.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Programação — Campinas
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(105, 6, 'Laboratório de Programação — Campinas', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de algoritmos e desenvolvimento de software; implementação e teste de aplicações.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Redes — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(106, 6, 'Laboratório de Redes — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Montagem e configuração de redes de computadores; práticas de roteamento, cabeamento e diagnóstico.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Eletrônica — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(107, 6, 'Laboratório de Eletrônica — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Aulas práticas de circuitos analógicos e digitais; medições em bancadas com fontes e osciloscópios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Física — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(108, 6, 'Laboratório de Física — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Experimentos de mecânica, óptica e eletricidade; coleta de dados e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Química — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(109, 6, 'Laboratório de Química — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Práticas supervisionadas de preparo de soluções e análise de materiais; uso de bancadas com pia.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Prototipagem — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(110, 6, 'Laboratório de Prototipagem — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Construção de protótipos para projetos acadêmicos; atividades de fabricação digital e montagem.', NOW() - INTERVAL '170 days', TRUE),
+-- Secretaria Acadêmica — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(111, 6, 'Secretaria Acadêmica — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Matrículas, solicitações de documentos e registro da vida acadêmica dos estudantes.', NOW() - INTERVAL '170 days', TRUE),
+-- Coordenação de Cursos — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(112, 6, 'Coordenação de Cursos — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Organização das disciplinas e orientação de estudantes; reuniões de colegiado e atendimento docente.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala dos Docentes — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(113, 6, 'Sala dos Docentes — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento das aulas, preparação de avaliações e encontros de trabalho dos professores.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Defesas — Campinas
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(114, 6, 'Auditório de Defesas — Campinas', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Bancas de trabalhos de conclusão de curso, seminários e palestras; projeção e sonorização das apresentações.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Laboratórios — Campinas
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(115, 6, 'Almoxarifado de Laboratórios — Campinas', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Guarda e distribuição de cabos, componentes e ferramentas utilizados nas aulas práticas.', NOW() - INTERVAL '170 days', TRUE),
+-- Arquivo Acadêmico — Campinas
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(116, 6, 'Arquivo Acadêmico — Campinas', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e consulta controlada de documentos e processos acadêmicos físicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Biblioteca Universitária — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(117, 6, 'Biblioteca Universitária — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pesquisa bibliográfica, empréstimo de acervo e estudo; apoio à elaboração de trabalhos científicos.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Estudos Colaborativos — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(118, 6, 'Sala de Estudos Colaborativos — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Estudo em grupo e preparação de apresentações; mesas compartilhadas e pontos de energia.', NOW() - INTERVAL '170 days', TRUE),
+-- Praça de Convivência — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(119, 6, 'Praça de Convivência — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Intervalos e encontros entre estudantes; circulação entre os blocos acadêmicos e serviços.', NOW() - INTERVAL '170 days', TRUE),
+-- Centro de Atendimento ao Estudante — Campinas
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(120, 6, 'Centro de Atendimento ao Estudante — Campinas', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Orientação sobre serviços do campus, bolsas e encaminhamentos para apoio acadêmico.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Capacitação Operacional — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(121, 7, 'Sala de Capacitação Operacional — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Segurança — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(122, 7, 'Sala de Treinamento de Segurança — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Qualidade — Centro
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(123, 7, 'Sala de Treinamento de Qualidade — Centro', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Controle de Qualidade — Centro
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(124, 7, 'Laboratório de Controle de Qualidade — Centro', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Metrologia — Centro
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(125, 7, 'Laboratório de Metrologia — Centro', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ensaios — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(126, 7, 'Laboratório de Ensaios — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Mecânica — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(127, 7, 'Oficina de Manutenção Mecânica — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Elétrica — Centro
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(128, 7, 'Oficina de Manutenção Elétrica — Centro', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.', NOW() - INTERVAL '170 days', TRUE),
+-- Planejamento da Produção — Centro
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(129, 7, 'Planejamento da Produção — Centro', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.', NOW() - INTERVAL '170 days', TRUE),
+-- Engenharia de Processos — Centro
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(130, 7, 'Engenharia de Processos — Centro', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.', NOW() - INTERVAL '170 days', TRUE),
+-- Escritório de Recursos Humanos — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(131, 7, 'Escritório de Recursos Humanos — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão da Manutenção — Centro
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(132, 7, 'Sala de Gestão da Manutenção — Centro', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Segurança do Trabalho — Centro
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(133, 7, 'Auditório de Segurança do Trabalho — Centro', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Peças — Centro
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(134, 7, 'Almoxarifado de Peças — Centro', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de EPI — Centro
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(135, 7, 'Almoxarifado de EPI — Centro', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Ferramentas — Centro
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(136, 7, 'Depósito de Ferramentas — Centro', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório dos Colaboradores — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(137, 7, 'Refeitório dos Colaboradores — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.', NOW() - INTERVAL '170 days', TRUE),
+-- Área de Descanso — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(138, 7, 'Área de Descanso — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Recepção e Controle de Acesso — Centro
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(139, 7, 'Recepção e Controle de Acesso — Centro', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio de Circulação — Centro
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(140, 7, 'Pátio de Circulação — Centro', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Capacitação Operacional — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(141, 8, 'Sala de Capacitação Operacional — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Segurança — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(142, 8, 'Sala de Treinamento de Segurança — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Qualidade — Bela Vista
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(143, 8, 'Sala de Treinamento de Qualidade — Bela Vista', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Controle de Qualidade — Bela Vista
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(144, 8, 'Laboratório de Controle de Qualidade — Bela Vista', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Metrologia — Bela Vista
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(145, 8, 'Laboratório de Metrologia — Bela Vista', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ensaios — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(146, 8, 'Laboratório de Ensaios — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Mecânica — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(147, 8, 'Oficina de Manutenção Mecânica — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Elétrica — Bela Vista
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(148, 8, 'Oficina de Manutenção Elétrica — Bela Vista', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.', NOW() - INTERVAL '170 days', TRUE),
+-- Planejamento da Produção — Bela Vista
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(149, 8, 'Planejamento da Produção — Bela Vista', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.', NOW() - INTERVAL '170 days', TRUE),
+-- Engenharia de Processos — Bela Vista
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(150, 8, 'Engenharia de Processos — Bela Vista', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.', NOW() - INTERVAL '170 days', TRUE),
+-- Escritório de Recursos Humanos — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(151, 8, 'Escritório de Recursos Humanos — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão da Manutenção — Bela Vista
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(152, 8, 'Sala de Gestão da Manutenção — Bela Vista', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Segurança do Trabalho — Bela Vista
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(153, 8, 'Auditório de Segurança do Trabalho — Bela Vista', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Peças — Bela Vista
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(154, 8, 'Almoxarifado de Peças — Bela Vista', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de EPI — Bela Vista
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(155, 8, 'Almoxarifado de EPI — Bela Vista', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Ferramentas — Bela Vista
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(156, 8, 'Depósito de Ferramentas — Bela Vista', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório dos Colaboradores — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(157, 8, 'Refeitório dos Colaboradores — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.', NOW() - INTERVAL '170 days', TRUE),
+-- Área de Descanso — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(158, 8, 'Área de Descanso — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Recepção e Controle de Acesso — Bela Vista
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(159, 8, 'Recepção e Controle de Acesso — Bela Vista', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio de Circulação — Bela Vista
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(160, 8, 'Pátio de Circulação — Bela Vista', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Capacitação Operacional — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(161, 9, 'Sala de Capacitação Operacional — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Treinamento de operadores e integração de novos colaboradores; aulas sobre procedimentos de produção.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Segurança — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(162, 9, 'Sala de Treinamento de Segurança — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Aulas sobre prevenção de acidentes, uso de EPI e procedimentos de emergência.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Treinamento de Qualidade — Campinas
+-- Local: Bloco A, térreo. Sala com mesas, quadro e recursos de projeção.
+-- Finalidade e utilização: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(163, 9, 'Sala de Treinamento de Qualidade — Campinas', 1, 'Bloco A, térreo. Sala com mesas, quadro e recursos de projeção. Uso: Capacitação em inspeção de peças, critérios de aceitação e registro de não conformidades.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Controle de Qualidade — Campinas
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(164, 9, 'Laboratório de Controle de Qualidade — Campinas', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Inspeção e avaliação de amostras de peças produzidas; registro de resultados e liberação de lotes.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Metrologia — Campinas
+-- Local: Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(165, 9, 'Laboratório de Metrologia — Campinas', 2, 'Bloco A, térreo. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Medição dimensional de peças e verificação de instrumentos; uso de paquímetros e micrômetros.', NOW() - INTERVAL '170 days', TRUE),
+-- Laboratório de Ensaios — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(166, 9, 'Laboratório de Ensaios — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Ensaios técnicos de materiais e componentes; análise de desempenho e elaboração de relatórios.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Mecânica — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(167, 9, 'Oficina de Manutenção Mecânica — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Diagnóstico e reparo de conjuntos mecânicos; desmontagem, ajuste e montagem em bancadas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Oficina de Manutenção Elétrica — Campinas
+-- Local: Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários.
+-- Finalidade e utilização: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(168, 9, 'Oficina de Manutenção Elétrica — Campinas', 2, 'Bloco A, 1º pavimento. Ambiente técnico com bancadas, pontos de energia e armários. Uso: Testes e reparos de componentes elétricos; montagem de painéis de treinamento e diagnóstico de circuitos.', NOW() - INTERVAL '170 days', TRUE),
+-- Planejamento da Produção — Campinas
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(169, 9, 'Planejamento da Produção — Campinas', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Programação das ordens de fabricação, distribuição da capacidade e acompanhamento dos turnos.', NOW() - INTERVAL '170 days', TRUE),
+-- Engenharia de Processos — Campinas
+-- Local: Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(170, 9, 'Engenharia de Processos — Campinas', 3, 'Bloco A, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Revisão de métodos de fabricação e projetos de melhoria; análise de indicadores de produtividade.', NOW() - INTERVAL '170 days', TRUE),
+-- Escritório de Recursos Humanos — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(171, 9, 'Escritório de Recursos Humanos — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Atendimento aos colaboradores, organização de admissões e administração de documentos funcionais.', NOW() - INTERVAL '170 days', TRUE),
+-- Sala de Gestão da Manutenção — Campinas
+-- Local: Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(172, 9, 'Sala de Gestão da Manutenção — Campinas', 3, 'Bloco B, térreo. Sala de atendimento com estações de trabalho e arquivo. Uso: Planejamento de intervenções preventivas e corretivas; priorização e acompanhamento das ordens de serviço.', NOW() - INTERVAL '170 days', TRUE),
+-- Auditório de Segurança do Trabalho — Campinas
+-- Local: Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção.
+-- Finalidade e utilização: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(173, 9, 'Auditório de Segurança do Trabalho — Campinas', 4, 'Bloco B, térreo. Espaço de apresentações com assentos, palco e projeção. Uso: Palestras, campanhas de prevenção e reuniões ampliadas de segurança dos colaboradores.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de Peças — Campinas
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(174, 9, 'Almoxarifado de Peças — Campinas', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Recebimento, guarda e separação de peças de reposição para as intervenções de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Almoxarifado de EPI — Campinas
+-- Local: Bloco B, térreo. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(175, 9, 'Almoxarifado de EPI — Campinas', 5, 'Bloco B, térreo. Depósito com estantes e áreas para separação de materiais. Uso: Armazenamento e distribuição de equipamentos de proteção individual; conferência de estoque.', NOW() - INTERVAL '170 days', TRUE),
+-- Depósito de Ferramentas — Campinas
+-- Local: Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais.
+-- Finalidade e utilização: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(176, 9, 'Depósito de Ferramentas — Campinas', 5, 'Bloco B, 1º pavimento. Depósito com estantes e áreas para separação de materiais. Uso: Guarda, empréstimo e devolução de ferramentas utilizadas pelas equipes de manutenção.', NOW() - INTERVAL '170 days', TRUE),
+-- Refeitório dos Colaboradores — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(177, 9, 'Refeitório dos Colaboradores — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Consumo das refeições nos intervalos dos turnos; mesas coletivas e pontos de água potável.', NOW() - INTERVAL '170 days', TRUE),
+-- Área de Descanso — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(178, 9, 'Área de Descanso — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Pausas dos colaboradores entre atividades; espaço de convivência separado das áreas técnicas.', NOW() - INTERVAL '170 days', TRUE),
+-- Recepção e Controle de Acesso — Campinas
+-- Local: Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo.
+-- Finalidade e utilização: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(179, 9, 'Recepção e Controle de Acesso — Campinas', 3, 'Bloco B, 1º pavimento. Sala de atendimento com estações de trabalho e arquivo. Uso: Registro de visitantes e orientação de entrada; encaminhamento para os setores autorizados.', NOW() - INTERVAL '170 days', TRUE),
+-- Pátio de Circulação — Campinas
+-- Local: Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada.
+-- Finalidade e utilização: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.
+-- Cenário fictício para teste; localização e infraestrutura propostas para este ambiente.
+(180, 9, 'Pátio de Circulação — Campinas', 6, 'Bloco B, 1º pavimento. Área de uso compartilhado com circulação sinalizada. Uso: Deslocamento entre prédios e organização dos acessos; apoio à sinalização e segurança da circulação.', NOW() - INTERVAL '170 days', TRUE);
+
 
 -- ===================================================
 -- 11. EVENTOS (72)
@@ -271,16 +1129,17 @@ INSERT INTO evento (
 )
 SELECT
     n,
-    (((( ((n - 1) % 24) + 1) - 1) * 6) + 2),
-    (((n - 1) % 144) + 1),
-    'Manutenção Preventiva ' || n,
-    'Evento programado para inspeção e manutenção preventiva.',
-    'Local definido no cadastro da unidade.',
+    ((l.unidade_id - 1) * 6) + 2,
+    l.id,
+    'Inspeção preventiva: ' || l.nome,
+    'Verificar iluminação, tomadas e condições de uso de ' || l.nome || '; registrar itens que precisem de intervenção.',
+    l.descricao,
     CASE WHEN n % 4 = 0 THEN 'Necessário acesso acompanhado pelo gestor.' ELSE NULL END,
     NOW() + ((n % 45) || ' days')::INTERVAL + INTERVAL '08 hours',
     NOW() + ((n % 45) || ' days')::INTERVAL + INTERVAL '10 hours',
     NOW() - ((n % 40) || ' days')::INTERVAL
-FROM generate_series(1, 72) AS n;
+FROM generate_series(1, 72) AS n
+JOIN local_unidade l ON l.id = ((n - 1) % 180) + 1;
 
 -- ===================================================
 -- 12. CATEGORIAS DE EQUIPAMENTO (10)
@@ -290,13 +1149,13 @@ INSERT INTO categoria_equipamento (
 )
 SELECT
     n,
-    ((n - 1) * 6) + 2,
+    (((n - 1) % 9) * 6) + 2,
     (ARRAY[
         'Computadores', 'Ar-condicionado', 'Iluminação', 'Bombas Hidráulicas',
         'Câmeras de Segurança', 'Roteadores', 'Mobiliário', 'Quadros Elétricos',
         'Bebedouros', 'Equipamentos Mecânicos'
     ])[n],
-    'Categoria de equipamentos utilizada pela manutenção.',
+    (ARRAY['Estações de trabalho e notebooks usados em aulas e rotinas administrativas.', 'Condicionadores de ar para controle de temperatura dos ambientes.', 'Luminárias e componentes de iluminação dos ambientes internos e externos.', 'Bombas para circulação e pressurização de água nas instalações.', 'Câmeras para acompanhamento dos acessos e áreas de circulação.', 'Roteadores e switches responsáveis pela conectividade dos ambientes.', 'Mesas, cadeiras e armários utilizados nas atividades da unidade.', 'Quadros de distribuição e dispositivos de proteção dos circuitos elétricos.', 'Bebedouros e purificadores disponíveis para alunos e colaboradores.', 'Motores e conjuntos mecânicos utilizados no apoio à operação e manutenção.'])[n],
     NOW() - INTERVAL '160 days',
     TRUE
 FROM generate_series(1, 10) AS n;
@@ -323,16 +1182,16 @@ INSERT INTO modelo_equipamento (
 )
 SELECT
     n,
-    ((n - 1) % 8) + 1,
+    (ARRAY[1,2,3,4,5,7,6,3,4,8])[((n - 1) % 10) + 1],
     ((n - 1) % 10) + 1,
-    'Modelo ' || LPAD(n::TEXT, 2, '0'),
-    'Modelo de equipamento utilizado nas unidades da instituição.',
+    (ARRAY['Estação de trabalho', 'Condicionador de ar split', 'Luminária LED', 'Bomba de pressurização', 'Câmera de monitoramento', 'Roteador de acesso', 'Cadeira de trabalho', 'Quadro de distribuição', 'Bebedouro de coluna', 'Motor de acionamento'])[((n - 1) % 10) + 1] || ' - série ' || (((n - 1) / 10) + 1),
+    (ARRAY['Estações de trabalho e notebooks usados em aulas e rotinas administrativas.', 'Condicionadores de ar para controle de temperatura dos ambientes.', 'Luminárias e componentes de iluminação dos ambientes internos e externos.', 'Bombas para circulação e pressurização de água nas instalações.', 'Câmeras para acompanhamento dos acessos e áreas de circulação.', 'Roteadores e switches responsáveis pela conectividade dos ambientes.', 'Mesas, cadeiras e armários utilizados nas atividades da unidade.', 'Quadros de distribuição e dispositivos de proteção dos circuitos elétricos.', 'Bebedouros e purificadores disponíveis para alunos e colaboradores.', 'Motores e conjuntos mecânicos utilizados no apoio à operação e manutenção.'])[((n - 1) % 10) + 1],
     NOW() - ((150 - n) || ' days')::INTERVAL,
     TRUE
 FROM generate_series(1, 30) AS n;
 
 -- ===================================================
--- 15. EQUIPAMENTOS (144) - 1 por local
+-- 15. EQUIPAMENTOS (180) - 1 por local
 -- ===================================================
 INSERT INTO equipamento (
     id, usuario_id, modelo_equipamento_id, local_unidade_id,
@@ -346,7 +1205,7 @@ SELECT
     'EQP-' || LPAD(n::TEXT, 5, '0'),
     NOW() - ((140 - (n % 100)) || ' days')::INTERVAL,
     TRUE
-FROM generate_series(1, 144) AS n
+FROM generate_series(1, 180) AS n
 JOIN local_unidade l ON l.id = n;
 
 -- ===================================================
@@ -364,12 +1223,12 @@ SELECT
     ((n - 1) % 10) + 1,
     l.id,
     (ARRAY[
-        'Falha elétrica', 'Vazamento identificado', 'Equipamento com ruído',
-        'Computador sem acesso', 'Móvel danificado', 'Ambiente sem climatização',
-        'Rede instável', 'Câmera sem sinal', 'Luminária apagada', 'Necessidade de limpeza técnica'
+        'Computador desligando', 'Gotejamento no ar-condicionado', 'Luminária com fixação solta',
+        'Bomba sem acionamento', 'Suporte da câmera solto', 'Roteador superaquecendo',
+        'Ponto de rede sem conexão', 'Quadro elétrico com trava danificada', 'Indicador do bebedouro apagado', 'Motor necessita limpeza técnica'
     ])[((n - 1) % 10) + 1] || ' #' || n,
-    'Problema relatado por colaborador da unidade e encaminhado para análise da manutenção.',
-    l.nome,
+    (ARRAY['Computador desliga durante o uso; verificar fonte e alimentação elétrica.', 'Condicionador apresenta gotejamento; verificar dreno e escoamento.', 'Luminária apresenta vibração na fixação; verificar suporte antes de liberar o uso.', 'Bomba não responde ao comando do painel; verificar acionamento e controle.', 'Suporte da câmera está solto e desloca o enquadramento; revisar fixação.', 'Roteador aquece e interrompe a conexão; verificar ventilação e dissipação.', 'Ponto de rede junto à mesa não estabelece conexão; testar cabo e tomada.', 'Fechamento do quadro elétrico está danificado; restringir acesso e revisar trava.', 'Indicador luminoso do bebedouro não acende; verificar sinalização e alimentação.', 'Motor acumula resíduos na carenagem; programar limpeza técnica com isolamento.'])[((n - 1) % 10) + 1] || ' Ambiente: ' || l.nome,
+    l.descricao,
     CASE WHEN n > 208 THEN 'Solicitação recusada após análise por não se enquadrar no fluxo de manutenção.' ELSE NULL END,
     GREATEST(
         NOW() - ((15 + (n * 7) % 150) || ' days')::INTERVAL,
@@ -382,7 +1241,7 @@ SELECT
         ELSE 1
     END
 FROM generate_series(1, 240) AS n
-JOIN local_unidade l ON l.id = ((n - 1) % 144) + 1
+JOIN local_unidade l ON l.id = ((n - 1) % 180) + 1
 JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 5 ELSE 6 END;
 
 -- ===================================================
@@ -400,8 +1259,8 @@ SELECT
     ((n - 1) % 10) + 1,
     ((n - 1) % 10) + 1,
     'Ocorrência resolvida #' || n,
-    'Ocorrência identificada e solucionada diretamente pelo técnico durante a rotina da unidade.',
-    l.nome,
+    (ARRAY['Fonte do computador reapertada e alimentação testada.', 'Dreno do ar-condicionado desobstruído; teste sem gotejamento.', 'Suporte da luminária reapertado; fixação conferida.', 'Comando da bomba restabelecido após revisão da conexão.', 'Suporte da câmera reajustado e enquadramento conferido.', 'Ventilação do roteador desobstruída; conectividade restabelecida.', 'Cabo de rede da mesa substituído; conexão validada.', 'Trava do quadro substituída e fechamento conferido.', 'Indicador do bebedouro substituído e testado.', 'Carenagem do motor limpa com equipamento isolado; funcionamento conferido.'])[((n - 1) % 10) + 1] || ' Ambiente: ' || l.nome,
+    l.descricao,
     (n - 1) % 3,
     GREATEST(
         NOW() - ((5 + (n * 3) % 110) || ' days')::INTERVAL,
@@ -410,7 +1269,7 @@ SELECT
     ),
     TRUE
 FROM generate_series(1, 100) AS n
-JOIN local_unidade l ON l.id = ((n - 1) % 144) + 1
+JOIN local_unidade l ON l.id = ((n - 1) % 180) + 1
 JOIN usuario u ON u.id = ((l.unidade_id - 1) * 6) + CASE WHEN n % 2 = 0 THEN 3 ELSE 4 END;
 
 -- ===================================================
@@ -637,12 +1496,14 @@ SELECT
         ELSE 'Validar funcionamento'
     END,
     CASE etapa
-        WHEN 1 THEN 'Realizar diagnóstico inicial e identificar a causa do problema.'
-        WHEN 2 THEN 'Executar a atividade necessária para correção do problema.'
-        ELSE 'Testar o local ou equipamento após a execução da manutenção.'
+        WHEN 1 THEN 'Diagnosticar: ' || p.descricao_problema
+        WHEN 2 THEN 'Corrigir a falha registrada em ' || l.nome || ': ' || p.titulo
+        ELSE 'Validar o funcionamento após o reparo em ' || l.nome || ' e registrar o resultado para ' || p.titulo
     END,
     os.data_criacao + (etapa || ' hours')::INTERVAL
 FROM ordem_servico os
+JOIN problema p ON p.id = os.problema_id
+JOIN local_unidade l ON l.id = p.local_unidade_id
 CROSS JOIN generate_series(1, 3) AS etapa;
 
 -- ===================================================
@@ -739,7 +1600,7 @@ FROM generate_series(1, 50) AS n
 JOIN observacao_conclusao oc ON oc.id = n;
 
 -- ===================================================
--- 25. TURNOS (48) - manhã e tarde por unidade
+-- 25. TURNOS (18) - manhã e tarde por unidade
 -- ===================================================
 INSERT INTO turno (
     id, unidade_id, nome, hora_inicio, hora_fim,
@@ -758,7 +1619,7 @@ FROM unidade e
 CROSS JOIN generate_series(1, 2) AS g;
 
 -- ===================================================
--- 26. TURNO_USUARIO (144) - 1 turno por usuário
+-- 26. TURNO_USUARIO (54) - 1 turno por usuário
 -- ===================================================
 INSERT INTO turno_usuario (
     id, turno_id, usuario_id, data_criacao, esta_ativo
@@ -900,20 +1761,45 @@ BEGIN
         RAISE EXCEPTION 'A massa não deve registrar Atrasada antes do prazo previsto.';
     END IF;
 
+    IF EXISTS (
+        SELECT 1 FROM evento ev
+        JOIN usuario u ON u.id = ev.usuario_id
+        JOIN local_unidade l ON l.id = ev.local_unidade_id
+        WHERE u.unidade_id <> l.unidade_id
+    ) THEN
+        RAISE EXCEPTION 'Evento com responsável de outra unidade.';
+    END IF;
+
+    IF EXISTS (
+        SELECT i.id FROM instituicao i
+        LEFT JOIN unidade un ON un.instituicao_id = i.id
+        GROUP BY i.id HAVING COUNT(un.id) <> 3
+    ) THEN
+        RAISE EXCEPTION 'Cada instituição deve possuir exatamente três unidades.';
+    END IF;
+
+    IF EXISTS (
+        SELECT un.id FROM unidade un
+        LEFT JOIN local_unidade l ON l.unidade_id = un.id
+        GROUP BY un.id HAVING COUNT(l.id) <> 20
+    ) THEN
+        RAISE EXCEPTION 'Cada unidade deve possuir 20 locais na massa de teste.';
+    END IF;
+
     -- Confere a massa planejada para detectar perda de dados por JOINs.
     FOR verificacao IN
         SELECT * FROM (VALUES
-            ('super_admin', 3), ('instituicao', 12), ('unidade', 24),
-            ('plano', 4), ('contrato', 24), ('pagamento', 72),
-            ('usuario', 144), ('aptidao', 144), ('feedback', 60),
-            ('local_unidade', 144), ('evento', 72),
+            ('super_admin', 3), ('instituicao', 3), ('unidade', 9),
+            ('plano', 4), ('contrato', 9), ('pagamento', 27),
+            ('usuario', 54), ('aptidao', 54), ('feedback', 60),
+            ('local_unidade', 180), ('evento', 72),
             ('categoria_equipamento', 10), ('marca_equipamento', 8),
-            ('modelo_equipamento', 30), ('equipamento', 144),
+            ('modelo_equipamento', 30), ('equipamento', 180),
             ('problema', 240), ('ocorrencia', 100),
             ('ordem_servico', 160), ('ordem_servico_status_auditoria', 249),
             ('ordem_servico_tecnico_auditoria', 40), ('tarefa', 480),
             ('observacao_conclusao', 50), ('foto', 300),
-            ('turno', 48), ('turno_usuario', 144)
+            ('turno', 18), ('turno_usuario', 54)
         ) AS massa(tabela, esperado)
     LOOP
         EXECUTE format('SELECT COUNT(*), MAX(id) FROM %I', verificacao.tabela)
