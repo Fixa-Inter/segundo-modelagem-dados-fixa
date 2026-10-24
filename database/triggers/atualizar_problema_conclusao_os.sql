@@ -1,6 +1,12 @@
 /*
- * Marca o problema como concluído (3) quando sua OS passa para finalizada (4).
- * Dependências: public.ordem_servico e public.problema.
+ * Trigger: trg_atualizar_data_atualizacao
+ *
+ * Descrição:
+ * Atualiza o status do problema para "Concluído" (3) quando a ordem de serviço associada é concluída (status_ordem_servico = 4).
+ *
+ * Dependências:
+ * - ordem_servico
+ * - problema
  */
 CREATE OR REPLACE FUNCTION public.atualizar_problema_conclusao_os()
 RETURNS TRIGGER
