@@ -84,8 +84,8 @@
 \echo '3. Criando procedures...'
 
 \ir ../database/procedures/cadastrar_problema.sql
-\ir ../database/procedures/registrar_ocorrencia.sql
-\ir ../database/procedures/registrar_observacao_conclusao.sql
+\ir ../database/procedures/cadastrar_ocorrencia.sql
+\ir ../database/procedures/cadastrar_observacao_conclusao.sql
 
 
 -- ===================================================
@@ -100,6 +100,7 @@
 \ir ../database/triggers/auditar_pagamento.sql
 \ir ../database/triggers/auditar_problema.sql
 \ir ../database/triggers/auditar_usuario.sql
+\ir ../database/triggers/atualizar_problema_conclusao_os.sql
 
 
 -- ===================================================
